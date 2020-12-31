@@ -975,7 +975,10 @@ load_seccomp (const char *file)
 {
   bool success = false;
   struct sock_fprog program = {0, NULL};
-  FILE *stream = fopen (file, "rb");
+  FILE *stream;
+  do
+    stream = fopen (file, "rb");
+  while (stream == NULL && errno == EINTR);
   if (stream == NULL)
     {
       emacs_perror ("fopen");
