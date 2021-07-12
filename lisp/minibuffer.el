@@ -1074,9 +1074,9 @@ This overrides the defaults specified in `completion-category-defaults'."
                                    string table pred point)))
                (and probe (cons probe style))))
            (completion--styles md)))
-         (adjust-fn (get (cdr result-and-style) 'completion--adjust-metadata)))
-    (when (and adjust-fn metadata)
-      (setcdr metadata (cdr (funcall adjust-fn metadata))))
+         (style-specific-md (get (cdr result-and-style) 'completion--style-specific-metadata)))
+    (when (and style-specific-md metadata)
+      (setcdr metadata (cdr (funcall style-specific-md string table pred point metadata))))
     (if requote
         (funcall requote (car result-and-style) n)
       (car result-and-style))))
@@ -3853,9 +3853,9 @@ that is non-nil."
   :version "27.1"
   :type 'boolean)
 
-(put 'flex 'completion--adjust-metadata 'completion--flex-adjust-metadata)
+(put 'flex 'completion--style-specific-metadata 'completion--flex-style-specific-metadata)
 
-(defun completion--flex-adjust-metadata (metadata)
+(defun completion--flex-style-specific-metadata (_string _table _pred _point metadata)
   (cl-flet
       ((compose-flex-sort-fn
         (existing-sort-fn) ; wish `cl-flet' had proper indentation...
