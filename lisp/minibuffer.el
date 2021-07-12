@@ -3526,6 +3526,107 @@ each string is propertized with faces `completions-common-part',
          str)
        completions))))
 
+(defun completion--flex-score (pattern completions)
+  "Show where and how well PATTERN matches COMPLETIONS.
+PATTERN, a list of symbols and strings as seen
+`completion-pcm--merge-completions', is assumed to match every
+string in COMPLETIONS.  Return a deep copy of COMPLETIONS where
+each string is propertized with `completion-score', a number
+between 0 and 1, and with faces `completions-common-part',
+`completions-first-difference' in the relevant segments."
+  (when completions
+    (let* ((re (completion-pcm--pattern->regex pattern 'group))
+           (point-idx (completion-pcm--pattern-point-idx pattern))
+           (case-fold-search completion-ignore-case)
+           last-md)
+      (mapcar
+       (lambda (str)
+	 ;; Don't modify the string itself.
+         (setq str (copy-sequence str))
+         (unless (string-match re str)
+           (error "Internal error: %s does not match %s" re str))
+         (let* ((pos (if point-idx (match-beginning point-idx) (match-end 0)))
+                (match-end (match-end 0))
+                (md (cddr (setq last-md (match-data t last-md))))
+                (from 0)
+                (end (length str))
+                ;; To understand how this works, consider these simple
+                ;; ascii diagrams showing how the pattern "foo"
+                ;; flex-matches "fabrobazo", "fbarbazoo" and
+                ;; "barfoobaz":
+
+                ;;      f abr o baz o
+                ;;      + --- + --- +
+
+                ;;      f barbaz oo
+                ;;      + ------ ++
+
+                ;;      bar foo baz
+                ;;          +++
+
+                ;; "+" indicates parts where the pattern matched.  A
+                ;; "hole" in the middle of the string is indicated by
+                ;; "-".  Note that there are no "holes" near the edges
+                ;; of the string.  The completion score is a number
+                ;; bound by ]0..1]: the higher the better and only a
+                ;; perfect match (pattern equals string) will have
+                ;; score 1.  The formula takes the form of a quotient.
+                ;; For the numerator, we use the number of +, i.e. the
+                ;; length of the pattern.  For the denominator, it
+                ;; first computes
+                ;;
+                ;;     hole_i_contrib = 1 + (Li-1)^(1/tightness)
+                ;;
+                ;; , for each hole "i" of length "Li", where tightness
+                ;; is given by `flex-score-match-tightness'.  The
+                ;; final value for the denominator is then given by:
+                ;;
+                ;;    (SUM_across_i(hole_i_contrib) + 1) * len
+                ;;
+                ;; , where "len" is the string's length.
+                (score-numerator 0)
+                (score-denominator 0)
+                (last-b 0)
+                (update-score-and-face
+                 (lambda (a b)
+                   "Update score and face given match range (A B)."
+                   (add-face-text-property a b
+                                           'completions-common-part
+                                           nil str)
+                   (setq
+                    score-numerator   (+ score-numerator (- b a)))
+                   (unless (or (= a last-b)
+                               (zerop last-b)
+                               (= a (length str)))
+                     (setq
+                      score-denominator (+ score-denominator
+                                           1
+                                           (expt (- a last-b 1)
+                                                 (/ 1.0
+                                                    flex-score-match-tightness)))))
+                   (setq
+                    last-b              b))))
+           (while md
+             (funcall update-score-and-face from (pop md))
+             (setq from (pop md)))
+           ;; If `pattern' doesn't have an explicit trailing any, the
+           ;; regex `re' won't produce match data representing the
+           ;; region after the match.  We need to account to account
+           ;; for that extra bit of match (bug#42149).
+           (unless (= from match-end)
+             (funcall update-score-and-face from match-end))
+           (if (> (length str) pos)
+               (add-face-text-property
+                pos (1+ pos)
+                'completions-first-difference
+                nil str))
+           (unless (zerop (length str))
+             (put-text-property
+              0 1 'completion-score
+              (/ score-numerator (* end (1+ score-denominator)) 1.0) str)))
+         str)
+       completions))))
+
 (defun completion-pcm--find-all-completions (string table pred point
                                                     &optional filter)
   "Find all completions for STRING at POINT in TABLE, satisfying PRED.
@@ -3855,7 +3956,7 @@ that is non-nil."
 
 (put 'flex 'completion--style-specific-metadata 'completion--flex-style-specific-metadata)
 
-(defun completion--flex-style-specific-metadata (_string _table _pred _point metadata)
+(defun completion--flex-style-specific-metadata (string table pred point metadata)
   (cl-flet
       ((compose-flex-sort-fn
         (existing-sort-fn) ; wish `cl-flet' had proper indentation...
@@ -3874,6 +3975,12 @@ that is non-nil."
                   ;; file searches, meaning the next clauses will be
                   ;; ignored.
                   (> (point-max) (minibuffer-prompt-end)))
+              (setq pre-sorted (completion--flex-score
+                                ;; Generate the pattern
+                                (cadr (completion-substring--all-completions
+                                      string table pred point
+                                      #'completion-flex--make-flex-pattern))
+                                pre-sorted))
               (sort
                pre-sorted
                (lambda (c1 c2)
