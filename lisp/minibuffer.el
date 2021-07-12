@@ -3582,10 +3582,10 @@ between 0 and 1, and with faces `completions-common-part',
                 ;; , where "len" is the string's length.
                 (score-numerator 0)
                 (score-denominator 0)
-                (last-b 0)
-                (update-score-and-face
-                 (lambda (a b)
-                   "Update score and face given match range (A B)."
+                (last-b 0))
+           (while md
+             (let ((a from)
+                   (b (pop md)))
                    (setq
                     score-numerator   (+ score-numerator (- b a)))
                    (unless (or (= a last-b)
@@ -3598,16 +3598,28 @@ between 0 and 1, and with faces `completions-common-part',
                                                  (/ 1.0
                                                     flex-score-match-tightness)))))
                    (setq
-                    last-b              b))))
-           (while md
-             (funcall update-score-and-face from (pop md))
+                    last-b              b))
              (setq from (pop md)))
            ;; If `pattern' doesn't have an explicit trailing any, the
            ;; regex `re' won't produce match data representing the
            ;; region after the match.  We need to account to account
            ;; for that extra bit of match (bug#42149).
            (unless (= from match-end)
-             (funcall update-score-and-face from match-end))
+             (let ((a from)
+                   (b match-end))
+                   (setq
+                    score-numerator   (+ score-numerator (- b a)))
+                   (unless (or (= a last-b)
+                               (zerop last-b)
+                               (= a (length str)))
+                     (setq
+                      score-denominator (+ score-denominator
+                                           1
+                                           (expt (- a last-b 1)
+                                                 (/ 1.0
+                                                    flex-score-match-tightness)))))
+                   (setq
+                    last-b              b)))
            (cons (- (/ score-numerator (* end (1+ score-denominator)) 1.0)) str)))
        completions))))
 
