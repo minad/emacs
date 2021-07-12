@@ -692,6 +692,10 @@ for use at QPOS."
                                              'completions-common-part)
                                qprefix))))
                         (qcompletion (concat qprefix qnew)))
+                   ;; Attach unquoted completion string, which is needed
+                   ;; to score the completion in `completion--flex-score'.
+                   (put-text-property 0 1 'completion--unquoted
+                                      completion qcompletion)
 		   ;; FIXME: Similarly here, Cygwin's mapping trips this
 		   ;; assertion.
                    ;;(cl-assert
@@ -1035,6 +1039,17 @@ This overrides the defaults specified in `completion-category-defaults'."
         (delete-dups (append (cdr over) (copy-sequence completion-styles)))
        completion-styles)))
 
+(defvar completion--filter-completions nil
+  "Enable the new completions return value format.
+If this variable is non-nil the `all-completions' function of a
+completion style should return the results in the new alist format of
+`completion-filter-completions'.  This variable is purely needed to
+for backward compatibility of the existing builtin completion style
+functions.  New completion style functions may always return their
+results in the new alist format, since `completion-all-completions'
+transparently converts back to the old improper list of completions
+with base size in the last cdr.")
+
 (defun completion--nth-completion (n string table pred point metadata)
   "Call the Nth method of completion styles."
   ;; We provide special support for quoting/unquoting here because it cannot
@@ -1061,6 +1076,15 @@ This overrides the defaults specified in `completion-category-defaults'."
                  ;; the original table, in that case!
                  (functionp table))
             (let ((new (funcall table string point 'completion--unquote)))
+              ;; FIXME For now do not attempt deferred highlighting if
+              ;; quoting is used.  Not doing deferred highlighting is
+              ;; not too severe in this case, since
+              ;; `completion--twq-all' is already an expensive
+              ;; function, which allocates all completion strings.  In
+              ;; contrast to plain completion tables, the savings of
+              ;; deferred highlighting would be minimal in the case of
+              ;; quoted completion tables.
+              (setq completion--filter-completions nil)
               (setq string (pop new))
               (setq table (pop new))
               (setq point (pop new))
@@ -1074,9 +1098,10 @@ This overrides the defaults specified in `completion-category-defaults'."
                                    string table pred point)))
                (and probe (cons probe style))))
            (completion--styles md)))
-         (adjust-fn (get (cdr result-and-style) 'completion--adjust-metadata)))
-    (when (and adjust-fn metadata)
-      (setcdr metadata (cdr (funcall adjust-fn metadata))))
+         (style-md (get (cdr result-and-style) 'completion--style-metadata)))
+    (when (and style-md metadata)
+      (setcdr metadata (cdr (funcall style-md
+                                     string table pred point metadata))))
     (if requote
         (funcall requote (car result-and-style) n)
       (car result-and-style))))
@@ -1084,22 +1109,64 @@ This overrides the defaults specified in `completion-category-defaults'."
 (defun completion-try-completion (string table pred point &optional metadata)
   "Try to complete STRING using completion table TABLE.
 Only the elements of table that satisfy predicate PRED are considered.
-POINT is the position of point within STRING.
-The return value can be either nil to indicate that there is no completion,
-t to indicate that STRING is the only possible completion,
-or a pair (NEWSTRING . NEWPOINT) of the completed result string together with
-a new position for point."
+POINT is the position of point within STRING.  The return value can be
+either nil to indicate that there is no completion, t to indicate that
+STRING is the only possible completion, or a pair (NEWSTRING . NEWPOINT)
+of the completed result string together with a new position for point.
+The METADATA may be modified by the completion style."
   (completion--nth-completion 1 string table pred point metadata))
 
 (defun completion-all-completions (string table pred point &optional metadata)
   "List the possible completions of STRING in completion table TABLE.
 Only the elements of table that satisfy predicate PRED are considered.
-POINT is the position of point within STRING.
-The return value is a list of completions and may contain the base-size
-in the last `cdr'."
-  ;; FIXME: We need to additionally return the info needed for the
-  ;; second part of completion-base-position.
-  (completion--nth-completion 2 string table pred point metadata))
+POINT is the position of point within STRING.  The return value is a
+list of completions and may contain the base-size in the last `cdr'.
+The METADATA may be modified by the completion style.  This function
+has been superseded by `completion-filter-completions', which returns
+richer information and supports deferred candidate highlighting."
+  (let ((completion--filter-completions nil)
+        (result (completion--nth-completion 2 string table
+                                            pred point metadata)))
+    (if (and result (consp (car result)))
+        ;; Give the completion styles some freedom!
+        ;; If they are targeting Emacs 28 upwards only, they
+        ;; may always return a result with deferred
+        ;; highlighting.  We convert back to the old format
+        ;; here by applying the highlighting eagerly.
+        (nconc (funcall (cdr (assq 'highlight result))
+                        (cdr (assq 'completions result)))
+               (cdr (assq 'base result)))
+      result)))
+
+(defun completion-filter-completions (string table pred point metadata)
+  "Filter the possible completions of STRING in completion table TABLE.
+Only the elements of table that satisfy predicate PRED are considered.
+POINT is the position of point within STRING.  The METADATA may be
+modified by the completion style.  The return value is a alist with
+the keys:
+
+- base: Base position of the completion (from the start of STRING)
+- end: End position of the completion (from the start of STRING)
+- highlight: Highlighting function taking a list of completions and
+  returning a new list of new strings with applied highlighting.
+- completions: The list of completions.
+
+This function supersedes the function `completion-all-completions'."
+  (let* ((completion--filter-completions t)
+         (result (completion--nth-completion 2 string table
+                                             pred point metadata)))
+    (if (and result (not (consp (car result))))
+        ;; Deferred highlighting has been requested, but the completion
+        ;; style returned a non-deferred result. Convert the result to the
+        ;; new alist format.
+        (let* ((last (last result))
+               (base (or (cdr last) 0)))
+          (setcdr last nil)
+          `((base . ,base)
+            (end . ,(length string))
+            (highlight . identity)
+            (completions . ,result)))
+      result)))
 
 (defun minibuffer--bitset (modified completions exact)
   (logior (if modified    4 0)
@@ -1114,9 +1181,8 @@ Moves point to the end of the new text."
   ;; include upon insertion.
   (if minibuffer-allow-text-properties
       ;; If we're preserving properties, then just remove the faces
-      ;; and other properties added by the completion machinery.
-      (remove-text-properties 0 (length newtext) '(face completion-score)
-                              newtext)
+      ;; added by the completion machinery.
+      (remove-text-properties 0 (length newtext) '(face nil) newtext)
     ;; Remove all text properties.
     (set-text-properties 0 (length newtext) nil newtext))
   ;; Maybe this should be in subr.el.
@@ -2021,34 +2087,48 @@ This adds the face `completions-common-part' to the first
 It returns a list with font-lock properties applied to each element,
 and with BASE-SIZE appended as the last element."
   (when completions
-    (let ((com-str-len (- prefix-len (or base-size 0))))
-      (nconc
-       (mapcar
-        (lambda (elem)
-          (let ((str
-                 ;; Don't modify the string itself, but a copy, since the
-                 ;; the string may be read-only or used for other purposes.
-                 ;; Furthermore, since `completions' may come from
-                 ;; display-completion-list, `elem' may be a list.
-                 (if (consp elem)
-                     (car (setq elem (cons (copy-sequence (car elem))
-                                           (cdr elem))))
-                   (setq elem (copy-sequence elem)))))
-            (font-lock-prepend-text-property
-             0
-             ;; If completion-boundaries returns incorrect
-             ;; values, all-completions may return strings
-             ;; that don't contain the prefix.
-             (min com-str-len (length str))
-             'face 'completions-common-part str)
-            (if (> (length str) com-str-len)
-                (font-lock-prepend-text-property com-str-len (1+ com-str-len)
-                                                 'face
-                                                 'completions-first-difference
-                                                 str)))
-          elem)
-        completions)
-       base-size))))
+    (nconc
+     (completion--hilit-commonality (- prefix-len (or base-size 0)) completions)
+     base-size)))
+
+(defun completion--hilit-commonality (com-size completions)
+  (mapcar
+   (lambda (elem)
+     (let ((str
+            ;; Don't modify the string itself, but a copy, since the
+            ;; the string may be read-only or used for other purposes.
+            ;; Furthermore, since `completions' may come from
+            ;; display-completion-list, `elem' may be a list.
+            (if (consp elem)
+                (car (setq elem (cons (copy-sequence (car elem))
+                                      (cdr elem))))
+              (setq elem (copy-sequence elem)))))
+       (font-lock-prepend-text-property
+        0
+        ;; If completion-boundaries returns incorrect
+        ;; values, all-completions may return strings
+        ;; that don't contain the prefix.
+        (min com-size (length str))
+        'face 'completions-common-part str)
+       (if (> (length str) com-size)
+           (font-lock-prepend-text-property com-size (1+ com-size)
+                                            'face
+                                            'completions-first-difference
+                                            str)))
+     elem)
+   completions))
+
+(defun completion--deferred-hilit (completions prefix-len base end)
+  "Return completions in old format or new alist format.
+If `completion--filter-completions' is non-nil use the new format."
+  (if completion--filter-completions
+      (when completions
+        `((base . ,base)
+          (end . ,end)
+          (highlight . ,(apply-partially #'completion--hilit-commonality
+                                         (- prefix-len base)))
+          (completions . ,completions)))
+    (completion-hilit-commonality completions prefix-len base)))
 
 (defun display-completion-list (completions &optional common-substring group-fun)
   "Display the list of completions, COMPLETIONS, using `standard-output'.
@@ -2163,15 +2243,16 @@ variables.")
          (end (or end (point-max)))
          (string (buffer-substring start end))
          (md (completion--field-metadata start))
-         (completions (completion-all-completions
-                       string
-                       minibuffer-completion-table
-                       minibuffer-completion-predicate
-                       (- (point) start)
-                       md)))
+         (filtered-completions (completion-filter-completions
+                                string
+                                minibuffer-completion-table
+                                minibuffer-completion-predicate
+                                (- (point) start)
+                                md))
+         (completions (alist-get 'completions filtered-completions)))
     (message nil)
     (if (or (null completions)
-            (and (not (consp (cdr completions)))
+            (and (not (cdr completions))
                  (equal (car completions) string)))
         (progn
           ;; If there are no completions, or if the current input is already
@@ -2181,8 +2262,7 @@ variables.")
           (completion--message
            (if completions "Sole completion" "No completions")))
 
-      (let* ((last (last completions))
-             (base-size (or (cdr last) 0))
+      (let* ((base-size (alist-get 'base filtered-completions))
              (prefix (unless (zerop base-size) (substring string 0 base-size)))
              (all-md (completion--metadata (buffer-substring-no-properties
                                             start (point))
@@ -2226,9 +2306,10 @@ variables.")
             (body-function
              . ,#'(lambda (_window)
                     (with-current-buffer mainbuf
-                      ;; Remove the base-size tail because `sort' requires a properly
-                      ;; nil-terminated list.
-                      (when last (setcdr last nil))
+                      ;; Apply highlighting
+                      (setq completions
+                            (funcall (alist-get 'highlight filtered-completions)
+                                     completions))
 
                       ;; Sort first using the `display-sort-function'.
                       ;; FIXME: This function is for the output of
@@ -2267,13 +2348,10 @@ variables.")
                                       completions))))
 
                       (with-current-buffer standard-output
-                        (setq-local completion-base-position
-                             (list (+ start base-size)
-                                   ;; FIXME: We should pay attention to completion
-                                   ;; boundaries here, but currently
-                                   ;; completion-all-completions does not give us the
-                                   ;; necessary information.
-                                   end))
+                        (setq-local
+                         completion-base-position
+                         (list (+ start base-size)
+                               (+ start (alist-get 'end filtered-completions))))
                         (setq-local completion-list-insert-choice-function
                              (let ((ctable minibuffer-completion-table)
                                    (cpred minibuffer-completion-predicate)
@@ -3223,10 +3301,11 @@ Like `internal-complete-buffer', but removes BUFFER from the completion list."
       completion)))
 
 (defun completion-emacs21-all-completions (string table pred _point)
-  (completion-hilit-commonality
+  (completion--deferred-hilit
    (all-completions string table pred)
    (length string)
-   (car (completion-boundaries string table pred ""))))
+   (car (completion-boundaries string table pred ""))
+   (length string)))
 
 (defun completion-emacs22-try-completion (string table pred point)
   (let ((suffix (substring string point))
@@ -3249,11 +3328,12 @@ Like `internal-complete-buffer', but removes BUFFER from the completion list."
       (cons (concat completion suffix) (length completion)))))
 
 (defun completion-emacs22-all-completions (string table pred point)
-  (let ((beforepoint (substring string 0 point)))
-    (completion-hilit-commonality
+  (let* ((beforepoint (substring string 0 point))
+         (afterpoint (substring string point))
+         (bounds (completion-boundaries beforepoint table pred afterpoint)))
+    (completion--deferred-hilit
      (all-completions beforepoint table pred)
-     point
-     (car (completion-boundaries beforepoint table pred "")))))
+     point (car bounds) (+ point (cdr bounds)))))
 
 ;;; Basic completion.
 
@@ -3312,7 +3392,7 @@ Return the new suffix."
                             'point
                             (substring afterpoint 0 (cdr bounds)))))
          (all (completion-pcm--all-completions prefix pattern table pred)))
-    (completion-hilit-commonality all point (car bounds))))
+    (completion--deferred-hilit all point (car bounds) (+ point (cdr bounds)))))
 
 ;;; Partial-completion-mode style completion.
 
@@ -3504,13 +3584,25 @@ one large \"hole\" and a clumped-together \"oo\" match) higher
 than the latter (which has two \"holes\" and three
 one-letter-long matches).")
 
+(defun completion-pcm--deferred-hilit (pattern completions base end)
+  "Return completions in old format or new alist format.
+If `completion--filter-completions' is non-nil use the new format."
+  (when completions
+    (if completion--filter-completions
+        `((base . ,base)
+          (end . ,end)
+          (highlight . ,(apply-partially
+                         #'completion-pcm--hilit-commonality
+                         pattern))
+          (completions . ,completions))
+      (nconc (completion-pcm--hilit-commonality pattern completions) base))))
+
 (defun completion-pcm--hilit-commonality (pattern completions)
   "Show where and how well PATTERN matches COMPLETIONS.
 PATTERN, a list of symbols and strings as seen
 `completion-pcm--merge-completions', is assumed to match every
 string in COMPLETIONS.  Return a deep copy of COMPLETIONS where
-each string is propertized with `completion-score', a number
-between 0 and 1, and with faces `completions-common-part',
+each string is propertized with faces `completions-common-part',
 `completions-first-difference' in the relevant segments."
   (when completions
     (let* ((re (completion-pcm--pattern->regex pattern 'group))
@@ -3525,6 +3617,54 @@ between 0 and 1, and with faces `completions-common-part',
            (error "Internal error: %s does not match %s" re str))
          (let* ((pos (if point-idx (match-beginning point-idx) (match-end 0)))
                 (match-end (match-end 0))
+                (md (cddr (setq last-md (match-data t last-md))))
+                (from 0))
+           (while md
+             (add-face-text-property from (pop md)
+                                     'completions-common-part
+                                     nil str)
+             (setq from (pop md)))
+           ;; If `pattern' doesn't have an explicit trailing any, the
+           ;; regex `re' won't produce match data representing the
+           ;; region after the match.  We need to account to account
+           ;; for that extra bit of match (bug#42149).
+           (unless (= from match-end)
+             (add-face-text-property from match-end
+                                     'completions-common-part
+                                     nil str))
+           (if (> (length str) pos)
+               (add-face-text-property
+                pos (1+ pos)
+                'completions-first-difference
+                nil str)))
+         str)
+       completions))))
+
+(defun completion--flex-score (pattern completions)
+  "Compute how well PATTERN matches COMPLETIONS.
+PATTERN, a list of strings is assumed to match every string in
+COMPLETIONS.  Return a copy of COMPLETIONS where each element is
+a pair of a score and the completion string.  The score lies in
+the range between -1 and 0, where -1 corresponds to the full
+match."
+  (when completions
+    (let* ((re (completion-pcm--pattern->regex pattern 'group))
+           (case-fold-search completion-ignore-case)
+           last-md)
+      (mapcar
+       (lambda (str)
+         ;; The flex completion style requires the completion to match
+         ;; the pattern to compute the scoring.  For quoted completion
+         ;; tables the completions are matched against the *unquoted
+         ;; input string*.  However `completion-all-completions' and
+         ;; `completion-filter-completions' return a list of *quoted
+         ;; completions*, which is subsequently sorted.  Therefore we
+         ;; obtain the unquoted completion string which is stored in
+         ;; the text property `completion--unquoted'.
+         (setq str (or (get-text-property 0 'completion--unquoted str) str))
+         (unless (string-match re str)
+           (error "Internal error: %s does not match %s" re str))
+         (let* ((match-end (match-end 0))
                 (md (cddr (setq last-md (match-data t last-md))))
                 (from 0)
                 (end (length str))
@@ -3564,13 +3704,10 @@ between 0 and 1, and with faces `completions-common-part',
                 ;; , where "len" is the string's length.
                 (score-numerator 0)
                 (score-denominator 0)
-                (last-b 0)
-                (update-score-and-face
-                 (lambda (a b)
-                   "Update score and face given match range (A B)."
-                   (add-face-text-property a b
-                                           'completions-common-part
-                                           nil str)
+                (last-b 0))
+           (while md
+             (let ((a from)
+                   (b (pop md)))
                    (setq
                     score-numerator   (+ score-numerator (- b a)))
                    (unless (or (= a last-b)
@@ -3583,26 +3720,29 @@ between 0 and 1, and with faces `completions-common-part',
                                                  (/ 1.0
                                                     flex-score-match-tightness)))))
                    (setq
-                    last-b              b))))
-           (while md
-             (funcall update-score-and-face from (pop md))
+                    last-b              b))
              (setq from (pop md)))
            ;; If `pattern' doesn't have an explicit trailing any, the
            ;; regex `re' won't produce match data representing the
            ;; region after the match.  We need to account to account
            ;; for that extra bit of match (bug#42149).
            (unless (= from match-end)
-             (funcall update-score-and-face from match-end))
-           (if (> (length str) pos)
-               (add-face-text-property
-                pos (1+ pos)
-                'completions-first-difference
-                nil str))
-           (unless (zerop (length str))
-             (put-text-property
-              0 1 'completion-score
-              (/ score-numerator (* end (1+ score-denominator)) 1.0) str)))
-         str)
+             (let ((a from)
+                   (b match-end))
+                   (setq
+                    score-numerator   (+ score-numerator (- b a)))
+                   (unless (or (= a last-b)
+                               (zerop last-b)
+                               (= a (length str)))
+                     (setq
+                      score-denominator (+ score-denominator
+                                           1
+                                           (expt (- a last-b 1)
+                                                 (/ 1.0
+                                                    flex-score-match-tightness)))))
+                   (setq
+                    last-b              b)))
+           (cons (- (/ score-numerator (* end (1+ score-denominator)) 1.0)) str)))
        completions))))
 
 (defun completion-pcm--find-all-completions (string table pred point
@@ -3700,11 +3840,11 @@ filter out additional entries (because TABLE might not obey PRED)."
         (list pattern all prefix suffix)))))
 
 (defun completion-pcm-all-completions (string table pred point)
-  (pcase-let ((`(,pattern ,all ,prefix ,_suffix)
+  (pcase-let ((`(,pattern ,all ,prefix ,suffix)
                (completion-pcm--find-all-completions string table pred point)))
-    (when all
-      (nconc (completion-pcm--hilit-commonality pattern all)
-             (length prefix)))))
+    (completion-pcm--deferred-hilit pattern all
+                                    (length prefix)
+                                    (- (length string) (length suffix)))))
 
 (defun completion--common-suffix (strs)
   "Return the common suffix of the strings STRS."
@@ -3885,8 +4025,8 @@ the same set of elements."
 ;;; Substring completion
 ;; Mostly derived from the code of `basic' completion.
 
-(defun completion-substring--all-completions
-    (string table pred point &optional transform-pattern-fn)
+(defun completion--pattern-compiler
+    (string table pred point transform-pattern-fn)
   "Match the presumed substring STRING to the entries in TABLE.
 Respect PRED and POINT.  The pattern used is a PCM-style
 substring pattern, but it be massaged by TRANSFORM-PATTERN-FN, if
@@ -3904,12 +4044,23 @@ that is non-nil."
          (pattern (completion-pcm--optimize-pattern
                    (if transform-pattern-fn
                        (funcall transform-pattern-fn pattern)
-                     pattern)))
-         (all (completion-pcm--all-completions prefix pattern table pred)))
-    (list all pattern prefix suffix (car bounds))))
+                     pattern))))
+    (list pattern prefix suffix)))
+
+(defun completion-substring--all-completions
+    (string table pred point &optional transform-pattern-fn)
+  "Match the presumed substring STRING to the entries in TABLE.
+Respect PRED and POINT.  The pattern used is a PCM-style
+substring pattern, but it be massaged by TRANSFORM-PATTERN-FN, if
+that is non-nil."
+  (pcase-let (((and result `(,pattern ,prefix ,_suffix))
+               (completion--pattern-compiler string table pred point
+                                             transform-pattern-fn)))
+    (cons (completion-pcm--all-completions prefix pattern table pred)
+          result)))
 
 (defun completion-substring-try-completion (string table pred point)
-  (pcase-let ((`(,all ,pattern ,prefix ,suffix ,_carbounds)
+  (pcase-let ((`(,all ,pattern ,prefix ,suffix)
                (completion-substring--all-completions
                 string table pred point)))
     (if minibuffer-completing-file-name
@@ -3917,12 +4068,12 @@ that is non-nil."
     (completion-pcm--merge-try pattern all prefix suffix)))
 
 (defun completion-substring-all-completions (string table pred point)
-  (pcase-let ((`(,all ,pattern ,prefix ,_suffix ,_carbounds)
+  (pcase-let ((`(,all ,pattern ,prefix ,suffix)
                (completion-substring--all-completions
                 string table pred point)))
-    (when all
-      (nconc (completion-pcm--hilit-commonality pattern all)
-             (length prefix)))))
+    (completion-pcm--deferred-hilit pattern all
+                                    (length prefix)
+                                    (- (length string) (length suffix)))))
 
 ;;; "flex" completion, also known as flx/fuzzy/scatter completion
 ;; Completes "foo" to "frodo" and "farfromsober"
@@ -3932,42 +4083,40 @@ that is non-nil."
   :version "27.1"
   :type 'boolean)
 
-(put 'flex 'completion--adjust-metadata 'completion--flex-adjust-metadata)
+(put 'flex 'completion--style-metadata 'completion--flex-style-metadata)
 
-(defun completion--flex-adjust-metadata (metadata)
-  (cl-flet
-      ((compose-flex-sort-fn
-        (existing-sort-fn) ; wish `cl-flet' had proper indentation...
-        (lambda (completions)
-          (let ((pre-sorted
-                 (if existing-sort-fn
-                     (funcall existing-sort-fn completions)
-                   completions)))
-            (cond
-             ((or (not (window-minibuffer-p))
-                  ;; JT@2019-12-23: FIXME: this is still wrong.  What
-                  ;; we need to test here is "some input that actually
-                  ;; leads to flex filtering", not "something after
-                  ;; the minibuffer prompt".  Among other
-                  ;; inconsistencies, the latter is always true for
-                  ;; file searches, meaning the next clauses will be
-                  ;; ignored.
-                  (> (point-max) (minibuffer-prompt-end)))
-              (sort
-               pre-sorted
-               (lambda (c1 c2)
-                 (let ((s1 (get-text-property 0 'completion-score c1))
-                       (s2 (get-text-property 0 'completion-score c2)))
-                   (> (or s1 0) (or s2 0))))))
-             (t pre-sorted))))))
-    `(metadata
-      (display-sort-function
-       . ,(compose-flex-sort-fn
-           (completion-metadata-get metadata 'display-sort-function)))
-      (cycle-sort-function
-       . ,(compose-flex-sort-fn
-           (completion-metadata-get metadata 'cycle-sort-function)))
-      ,@(cdr metadata))))
+(defun completion--flex-style-metadata (string table pred point metadata)
+  ;; Use the modified flex sorting function only for non-empty input.
+  ;; In an older version of `completion--flex-adjust-metadata', the
+  ;; check (> (point-max) (minibuffer-prompt-end))) was used instead.
+  (unless (eq string "")
+    (let ((pattern (car (completion--pattern-compiler
+                         string table pred point
+                         #'completion-flex--make-flex-pattern))))
+      (cl-flet
+          ((compose-flex-sort-fn
+            (existing-sort-fn) ; wish `cl-flet' had proper indentation...
+            (lambda (completions)
+              (let* ((sorted (sort (completion--flex-score
+                                    pattern
+                                    (if existing-sort-fn
+                                        (funcall existing-sort-fn completions)
+                                      completions))
+                                   #'car-less-than-car))
+                     (cell sorted))
+                ;; Remove score decorations, reuse the list to avoid allocations.
+                (while cell
+                  (setcar cell (cdar cell))
+                  (pop cell))
+                sorted))))
+        `(metadata
+          (display-sort-function
+           . ,(compose-flex-sort-fn
+               (completion-metadata-get metadata 'display-sort-function)))
+          (cycle-sort-function
+           . ,(compose-flex-sort-fn
+               (completion-metadata-get metadata 'cycle-sort-function)))
+          ,@(cdr metadata))))))
 
 (defun completion-flex--make-flex-pattern (pattern)
   "Convert PCM-style PATTERN into PCM-style flex pattern.
@@ -3989,7 +4138,7 @@ which is at the core of flex logic.  The extra
 (defun completion-flex-try-completion (string table pred point)
   "Try to flex-complete STRING in TABLE given PRED and POINT."
   (unless (and completion-flex-nospace (string-search " " string))
-    (pcase-let ((`(,all ,pattern ,prefix ,suffix ,_carbounds)
+    (pcase-let ((`(,all ,pattern ,prefix ,suffix)
                  (completion-substring--all-completions
                   string table pred point
                   #'completion-flex--make-flex-pattern)))
@@ -4006,13 +4155,13 @@ which is at the core of flex logic.  The extra
 (defun completion-flex-all-completions (string table pred point)
   "Get flex-completions of STRING in TABLE, given PRED and POINT."
   (unless (and completion-flex-nospace (string-search " " string))
-    (pcase-let ((`(,all ,pattern ,prefix ,_suffix ,_carbounds)
+    (pcase-let ((`(,all ,pattern ,prefix ,suffix)
                  (completion-substring--all-completions
                   string table pred point
                   #'completion-flex--make-flex-pattern)))
-      (when all
-        (nconc (completion-pcm--hilit-commonality pattern all)
-               (length prefix))))))
+      (completion-pcm--deferred-hilit pattern all
+                                    (length prefix)
+                                    (- (length string) (length suffix))))))
 
 ;; Initials completion
 ;; Complete /ums to /usr/monnier/src or lch to list-command-history.
@@ -4049,7 +4198,11 @@ which is at the core of flex logic.  The extra
 (defun completion-initials-all-completions (string table pred _point)
   (let ((newstr (completion-initials-expand string table pred)))
     (when newstr
-      (completion-pcm-all-completions newstr table pred (length newstr)))))
+      (pcase-let ((`(,pattern ,all ,prefix ,_suffix)
+                   (completion-pcm--find-all-completions newstr table
+                                                         pred (length newstr))))
+        (completion-pcm--deferred-hilit pattern all
+                                        (length prefix) (length string))))))
 
 (defun completion-initials-try-completion (string table pred _point)
   (let ((newstr (completion-initials-expand string table pred)))
