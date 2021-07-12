@@ -28,8 +28,7 @@
 
 (require 'ert)
 (require 'ert-x)
-
-(eval-when-compile (require 'cl-lib))
+(require 'cl-lib)
 
 (ert-deftest completion-test1 ()
   (with-temp-buffer
@@ -330,6 +329,220 @@
             (car (completion-flex-all-completions
                   "custgroup" '("customize-group-other-window") nil 9)))
            15)))
+
+(ert-deftest completion-flex-score-test-1 ()
+  ;; Full match!
+  (should (equal
+           (completion--flex-score '(prefix "R") '("R"))
+           (list (cons -1.0 "R")))))
+
+(ert-deftest completion-flex-score-test-2 ()
+  ;; One third and half of a match!
+  (should (equal
+           (completion--flex-score '(prefix "foo")
+                                   '("barfoobar" "fooboo"))
+           (list (cons (/ -1.0 3.0) "barfoobar")
+                 (cons (/ -1.0 2.0) "fooboo")))))
+
+(ert-deftest completion-flex-score-test-3 ()
+  ;; One fourth of a match
+  (should (eql
+           (caar (completion--flex-score '(prefix "R" point "O")
+                                         '("RaOb")))
+           (/ -1.0 4.0))))
+
+(ert-deftest completion-flex-score-test-4 ()
+  ;; For quoted completion tables, score the unquoted completion string.
+  (should (equal
+           (completion--flex-score
+            '(prefix "R")
+            (list (propertize "X" 'completion--unquoted "R")))
+           (list (cons -1.0 "X")))))
+
+(defun completion--test-style (style string point table filtered)
+  (let* ((completion-styles (list style))
+         (pred (lambda (x) (not (string-search "!" x))))
+         (result (completion-filter-completions
+                  string table pred point nil)))
+    (should (equal (alist-get 'base result) 0))
+    (should (equal (alist-get 'end result) (length string)))
+    (should (equal (alist-get 'completions result) filtered))
+    ;; The highlighting function should be present.
+    (should (not (memq (alist-get 'highlight result) '(nil identity))))
+    ;; Equal results as `completion-all-completions'.
+    (should (equal (completion-all-completions string table pred point)
+                   (append filtered 0)))
+    ;; The returned strings should be identical to the original strings.
+    ;; The `completion-filter-completions' function avoids allocations!
+    (should (cl-intersection (alist-get 'completions result)
+                             table :test #'eq))))
+
+(ert-deftest completion-basic-style-test-1 ()
+  ;; point at the beginning |foo
+  (completion--test-style 'basic "foo" 0
+                          '("foobar" "foo!" "barfoo" "xfooy" "boobar")
+                          '("foobar" "barfoo" "xfooy")))
+
+(ert-deftest completion-basic-style-test-2 ()
+  ;; point foo
+  (completion--test-style 'basic "foo" 2
+                          '("foobar" "foo!" "fobar" "barfoo" "xfooy" "boobar")
+                          '("foobar")))
+
+(ert-deftest completion-substring-style-test ()
+  (completion--test-style 'substring "foo" 1
+                          '("foobar" "foo!" "barfoo" "xfooy" "boobar")
+                          '("foobar" "barfoo" "xfooy")))
+
+(ert-deftest completion-emacs21-style-test ()
+  (completion--test-style 'emacs21 "foo" 1
+                          '("foobar" "foo!" "fobar" "barfoo" "xfooy" "boobar")
+                          '("foobar")))
+
+(ert-deftest completion-emacs22-style-test ()
+  (completion--test-style 'emacs22 "fo0" 1
+                          '("foobar" "foo!" "fobar" "barfoo" "xfooy" "boobar")
+                          '("foobar" "fobar"))) ;; suffix ignored completely
+
+(ert-deftest completion-flex-style-test ()
+  (completion--test-style 'flex "abc" 1
+                          '("abc" "abc!" "xaybzc" "xaybz")
+                          '("abc" "xaybzc")))
+
+(ert-deftest completion-initials-style-test ()
+  (completion--test-style 'initials "abc" 1
+                          '("a-b-c" "a-b-c!" "ax-by-cz" "xax-by-cz")
+                          '("a-b-c" "ax-by-cz")))
+
+(ert-deftest completion-pcm-style-test ()
+  (completion--test-style 'partial-completion "ax-b-c" 1
+                          '("ax-b-c" "ax-b-c!" "ax-by-cz" "xax-by-cz")
+                          '("ax-b-c" "ax-by-cz")))
+
+(ert-deftest completion-filter-completions-highlight-test ()
+  ;; point at the beginning |foo
+  (let* ((completion-styles '(basic))
+         (result (completion-filter-completions
+                  "foo" '("foobar" "fbarfoo" "fxfooy" "bar")
+                  nil 1 nil)))
+    (should (equal
+             (format "%S" (alist-get 'completions result))
+             (format "%S" '("foobar" "fbarfoo" "fxfooy"))))
+    (should (equal
+             (format "%S" (funcall (alist-get 'highlight result)
+                                   (alist-get 'completions result)))
+             (format "%S"
+                     '(#("foobar" 0 1 (face (completions-common-part))
+                         1 2 (face (completions-first-difference)))
+                       #("fbarfoo" 0 1 (face (completions-common-part))
+                         1 2 (face (completions-first-difference)))
+                       #("fxfooy" 0 1 (face (completions-common-part))
+                         1 2 (face (completions-first-difference)))))))))
+
+(defun completion--test-boundaries (style string table result)
+  (let ((table
+         (lambda (str pred action)
+           (pcase action
+             (`(boundaries . ,suffix) `(boundaries
+                                        ,(1+ (string-match-p "<\\|/" str))
+                                        . ,(or (string-search ">" suffix) (length suffix))))
+             (_ (complete-with-action action table
+                                      (replace-regexp-in-string ".*[</]" "" str)
+                                      pred)))))
+        (point (string-search "|" string))
+        (string (string-replace "|" "" string))
+        (completion-styles (list style)))
+    (should (equal
+             (assq-delete-all
+              (if (assq 'highlight result) '-does-not-exist 'highlight)
+              (completion-filter-completions
+               string table nil point nil))
+             result))
+    (should (equal
+             (completion-all-completions
+              string table nil point)
+             (append (alist-get 'completions result)
+                     (alist-get 'base result))))))
+
+(ert-deftest completion-emacs21-boundaries-test ()
+  (completion--test-boundaries 'emacs21 "before<in|put>after"
+                               '("other") nil)
+  (completion--test-boundaries 'emacs21 "before<in|put>after"
+                               '("ainput>after" "input>after" "inpux>after"
+                                 "inxputy>after" "input>after2")
+                               '((base . 7)
+                                 (end . 18)
+                                 (completions "input>after" "input>after2"))))
+
+(ert-deftest completion-emacs22-boundaries-test ()
+  (completion--test-boundaries 'emacs22 "before<in|put>after"
+                               '("other") nil)
+  (completion--test-boundaries 'emacs22 "before<in|put>after"
+                               '("ainxxx" "inyy" "inzzz")
+                               '((base . 7)
+                                 (end . 12)
+                                 (completions "inyy" "inzzz"))))
+
+(ert-deftest completion-basic-boundaries-test ()
+  (completion--test-boundaries 'basic "before<in|put>after"
+                               '("other") nil)
+  (completion--test-boundaries 'basic "before<in|put>after"
+                               '("ainput" "input" "inpux" "inxputy")
+                               '((base . 7)
+                                 (end . 12)
+                                 (completions "input" "inxputy"))))
+
+(ert-deftest completion-substring-boundaries-test ()
+  (completion--test-boundaries 'substring "before<in|puts>after"
+                               '("other") nil)
+  (completion--test-boundaries 'substring "before<in|puts>after"
+                               '("ainputs" "inputs" "inpux" "inxputsy")
+                               '((base . 7)
+                                 (end . 13)
+                                 (completions "ainputs" "inputs" "inxputsy"))))
+
+(ert-deftest completion-pcm-boundaries-test ()
+  (completion--test-boundaries 'partial-completion "before<in-p|t>after"
+                               '("other") nil)
+  (completion--test-boundaries 'partial-completion "before<in-p|t>after"
+                               '("ain-pu-ts" "in-pts" "in-pu-ts" "in-px" "inx-ptsy")
+                               '((base . 7)
+                                 (end . 12)
+                                 (completions "in-pts" "in-pu-ts" "inx-ptsy"))))
+
+(ert-deftest completion-initials-boundaries-test ()
+  (completion--test-boundaries 'initials "/ip|t"
+                               '("other") nil)
+  (completion--test-boundaries 'initials "/ip|t"
+                               '("ain/pu/ts" "in/pts" "in/pu/ts" "a/in/pu/ts"
+                                 "in/pu/ts/foo" "in/px" "inx/ptsy")
+                               '((base . 1)
+                                 (end . 4)
+                                 (completions "in/pu/ts" "in/pu/ts/foo"))))
+
+(defun completion-emacs22orig-all-completions (string table pred point)
+  (let ((beforepoint (substring string 0 point)))
+    (completion-hilit-commonality
+      (all-completions beforepoint table pred)
+     point
+     (car (completion-boundaries beforepoint table pred "")))))
+
+(ert-deftest completion-upgrade-return-type-test ()
+  ;; Test transparent upgrade of list completion style return value
+  ;; to the alist return value format of `completion-format-completions'.
+  (let ((completion-styles-alist
+         '((emacs22orig completion-emacs22-try-completion
+                        completion-emacs22orig-all-completions nil))))
+  (completion--test-boundaries 'emacs22orig "before<in|put>after"
+                               '("ainxxx" "inyy" "inzzz")
+                               '((base . 7)
+                                 ;; 18 is incorrect, should be 12!
+                                 ;; But the information is not available
+                                 ;; due to the completion-style upgrade.
+                                 (end . 18)
+                                 ;; Identity highlighting function.
+                                 (highlight . identity)
+                                 (completions "inyy" "inzzz")))))
 
 (provide 'minibuffer-tests)
 ;;; minibuffer-tests.el ends here
