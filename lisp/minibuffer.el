@@ -3536,17 +3536,13 @@ between 0 and 1, and with faces `completions-common-part',
 `completions-first-difference' in the relevant segments."
   (when completions
     (let* ((re (completion-pcm--pattern->regex pattern 'group))
-           (point-idx (completion-pcm--pattern-point-idx pattern))
            (case-fold-search completion-ignore-case)
            last-md)
       (mapcar
        (lambda (str)
-	 ;; Don't modify the string itself.
-         (setq str (copy-sequence str))
          (unless (string-match re str)
            (error "Internal error: %s does not match %s" re str))
-         (let* ((pos (if point-idx (match-beginning point-idx) (match-end 0)))
-                (match-end (match-end 0))
+         (let* ((match-end (match-end 0))
                 (md (cddr (setq last-md (match-data t last-md))))
                 (from 0)
                 (end (length str))
@@ -3590,9 +3586,6 @@ between 0 and 1, and with faces `completions-common-part',
                 (update-score-and-face
                  (lambda (a b)
                    "Update score and face given match range (A B)."
-                   (add-face-text-property a b
-                                           'completions-common-part
-                                           nil str)
                    (setq
                     score-numerator   (+ score-numerator (- b a)))
                    (unless (or (= a last-b)
@@ -3615,16 +3608,7 @@ between 0 and 1, and with faces `completions-common-part',
            ;; for that extra bit of match (bug#42149).
            (unless (= from match-end)
              (funcall update-score-and-face from match-end))
-           (if (> (length str) pos)
-               (add-face-text-property
-                pos (1+ pos)
-                'completions-first-difference
-                nil str))
-           (unless (zerop (length str))
-             (put-text-property
-              0 1 'completion-score
-              (/ score-numerator (* end (1+ score-denominator)) 1.0) str)))
-         str)
+           (cons (- (/ score-numerator (* end (1+ score-denominator)) 1.0)) str)))
        completions))))
 
 (defun completion-pcm--find-all-completions (string table pred point
@@ -3981,12 +3965,7 @@ that is non-nil."
                                       string table pred point
                                       #'completion-flex--make-flex-pattern))
                                 pre-sorted))
-              (sort
-               pre-sorted
-               (lambda (c1 c2)
-                 (let ((s1 (get-text-property 0 'completion-score c1))
-                       (s2 (get-text-property 0 'completion-score c2)))
-                   (> (or s1 0) (or s2 0))))))
+              (mapcar #'cdr (sort pre-sorted #'car-less-than-car)))
              (t pre-sorted))))))
     `(metadata
       (display-sort-function
