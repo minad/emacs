@@ -1091,6 +1091,33 @@ This overrides the defaults specified in `completion-category-defaults'."
                        (funcall fun string table pred point))))
                (and probe (cons probe style))))
            (completion--styles md)))
+
+         ;; TODO Rework the style-specific metadata adjustment to
+         ;; avoid the metadata mutation. I consider the metadata
+         ;; mutation a HACK.  It is unexpected. I've seen multiple
+         ;; people stating this independently. So we should take the
+         ;; chance to clean this up.
+         ;;
+         ;; Since we are introducing a new return value format for
+         ;; `completion-deferred-completions', we should probably also
+         ;; return the sort-cycle-fun and the display-cycle-fun or
+         ;; alternatively return the style-specific metadata.
+         ;; But I don't really see a point in allowing arbitrary metadata adjustments.
+         ;; Completion styles should only do filtering and sorting.
+         ;;
+         ;; Since the return value of `completion-deferred-completions' is
+         ;; extensible (plist), it could look like this:
+         ;;
+         ;; (:base base
+         ;;  :end end
+         ;;  :metadata modified-metadata
+         ;;  :highlight-function hl-fun
+         ;;  :completions completions)
+         ;;
+         ;; TODO Also note that the :end position should be returned!
+         ;; "We need to additionally return the info needed for the
+         ;; second part of completion-base-position."
+         ;;
          (style-specific-md (get (cdr result-and-style) 'completion--style-specific-metadata)))
     (when (and style-specific-md metadata)
       (setcdr metadata (cdr (funcall style-specific-md string table pred point metadata))))
@@ -1140,6 +1167,13 @@ in the last `cdr'."
   ;; TODO: We need to additionally return the info needed for the
   ;; second part of completion-base-position. Since we generalized the API
   ;; to return a plist, we can also add an :end field.
+
+  ;; TODO: The highlight function should take a list of faces. Stefan
+  ;; Monnier argues that this facilitates some use cases in Company.
+  ;; However the completion style is free to define its own (maybe
+  ;; even semantic) faces. The frontend would therefore be coupled to
+  ;; the completion style.  In my opinion the frontend should
+  ;; highlight the matches as provided by the completion style.
   (let ((result (completion--nth-completion 2 string table pred point metadata 'defer)))
     (if (and result (not (keywordp (car result))))
         ;; Deferred highlighting has been requested, but the completion
