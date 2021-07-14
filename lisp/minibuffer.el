@@ -3903,8 +3903,8 @@ the same set of elements."
 ;;; Substring completion
 ;; Mostly derived from the code of `basic' completion.
 
-(defun completion-substring--all-completions
-    (string table pred point &optional transform-pattern-fn)
+(defun completion--pattern-compiler
+    (string table pred point transform-pattern-fn)
   "Match the presumed substring STRING to the entries in TABLE.
 Respect PRED and POINT.  The pattern used is a PCM-style
 substring pattern, but it be massaged by TRANSFORM-PATTERN-FN, if
@@ -3922,9 +3922,19 @@ that is non-nil."
          (pattern (completion-pcm--optimize-pattern
                    (if transform-pattern-fn
                        (funcall transform-pattern-fn pattern)
-                     pattern)))
-         (all (completion-pcm--all-completions prefix pattern table pred)))
-    (list all pattern prefix suffix (car bounds))))
+                     pattern))))
+    (list pattern prefix suffix (car bounds))))
+
+(defun completion-substring--all-completions
+    (string table pred point &optional transform-pattern-fn)
+  "Match the presumed substring STRING to the entries in TABLE.
+Respect PRED and POINT.  The pattern used is a PCM-style
+substring pattern, but it be massaged by TRANSFORM-PATTERN-FN, if
+that is non-nil."
+  (pcase-let (((and result `(,pattern ,prefix ,_suffix ,_bounds))
+               (completion--pattern-compiler string table pred point transform-pattern-fn)))
+    (cons (completion-pcm--all-completions prefix pattern table pred)
+          result)))
 
 (defun completion-substring-try-completion (string table pred point)
   (pcase-let ((`(,all ,pattern ,prefix ,suffix ,_carbounds)
@@ -3972,8 +3982,7 @@ that is non-nil."
                   ;; ignored.
                   (> (point-max) (minibuffer-prompt-end)))
               (setq pre-sorted (completion--flex-score
-                                ;; Generate the pattern
-                                (cadr (completion-substring--all-completions
+                                (car (completion--pattern-compiler
                                       string table pred point
                                       #'completion-flex--make-flex-pattern))
                                 pre-sorted))
