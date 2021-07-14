@@ -1078,6 +1078,11 @@ This overrides the defaults specified in `completion-category-defaults'."
     (when (and style-specific-md metadata)
       (setcdr metadata (cdr (funcall style-specific-md string table pred point metadata))))
     (if requote
+        ;; XXX Here is still a thing which worries me: The flex completion
+        ;; style requires the resulting candidates to match the pattern
+        ;; during the scoring computation in the scoring. Can it happen
+        ;; that requoting messes this up somehow? Can it happen that after
+        ;; requoting the candidates don't match anymore?
         (funcall requote (car result-and-style) n)
       (car result-and-style))))
 
@@ -3540,6 +3545,7 @@ between 0 and 1, and with faces `completions-common-part',
            last-md)
       (mapcar
        (lambda (str)
+         ;; FIXME Do not fail hard here, potential problem with requoting?
          (unless (string-match re str)
            (error "Internal error: %s does not match %s" re str))
          (let* ((match-end (match-end 0))
@@ -3963,6 +3969,9 @@ that is non-nil."
 (put 'flex 'completion--style-specific-metadata 'completion--flex-style-specific-metadata)
 
 (defun completion--flex-style-specific-metadata (string table pred point metadata)
+  (let ((pattern (car (completion--pattern-compiler
+                       string table pred point
+                       #'completion-flex--make-flex-pattern))))
   (cl-flet
       ((compose-flex-sort-fn
         (existing-sort-fn) ; wish `cl-flet' had proper indentation...
@@ -3981,11 +3990,7 @@ that is non-nil."
                   ;; file searches, meaning the next clauses will be
                   ;; ignored.
                   (> (point-max) (minibuffer-prompt-end)))
-              (setq pre-sorted (completion--flex-score
-                                (car (completion--pattern-compiler
-                                      string table pred point
-                                      #'completion-flex--make-flex-pattern))
-                                pre-sorted))
+              (setq pre-sorted (completion--flex-score pattern pre-sorted))
               (mapcar #'cdr (sort pre-sorted #'car-less-than-car)))
              (t pre-sorted))))))
     `(metadata
@@ -3995,7 +4000,7 @@ that is non-nil."
       (cycle-sort-function
        . ,(compose-flex-sort-fn
            (completion-metadata-get metadata 'cycle-sort-function)))
-      ,@(cdr metadata))))
+      ,@(cdr metadata)))))
 
 (defun completion-flex--make-flex-pattern (pattern)
   "Convert PCM-style PATTERN into PCM-style flex pattern.
