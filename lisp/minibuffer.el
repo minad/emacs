@@ -1119,16 +1119,16 @@ Only the elements of table that satisfy predicate PRED are considered.
 POINT is the position of point within STRING.
 The return value is a list of completions and may contain the base-size
 in the last `cdr'."
-  ;; FIXME: We need to additionally return the info needed for the
-  ;; second part of completion-base-position.
   (let ((result (completion--nth-completion 2 string table pred point metadata nil)))
-    (if (and result (integerp (car result)))
+    (if (and result (keywordp (car result)))
         ;; Give the completion styles some freedom!
         ;; If they are targeting Emacs 28 upwards only, they
         ;; may always return a result with deferred
         ;; highlighting.  We convert back to the old format
         ;; here by applying the highlighting eagerly.
-        (nconc (funcall (cadr result) (cddr result)) (car result))
+        (nconc (funcall (plist-get result :highlight)
+                        (plist-get result :completions))
+               (plist-get result :base))
       result)))
 
 (defun completion-deferred-completions (string table pred point metadata)
@@ -1137,17 +1137,18 @@ Only the elements of table that satisfy predicate PRED are considered.
 POINT is the position of point within STRING.
 The return value is a list of completions and may contain the base-size
 in the last `cdr'."
-  ;; FIXME: We need to additionally return the info needed for the
-  ;; second part of completion-base-position.
+  ;; TODO: We need to additionally return the info needed for the
+  ;; second part of completion-base-position. Since we generalized the API
+  ;; to return a plist, we can also add an :end field.
   (let ((result (completion--nth-completion 2 string table pred point metadata 'defer)))
-    (if (and result (not (integerp (car result))))
+    (if (and result (not (keywordp (car result))))
         ;; Deferred highlighting has been requested, but the completion
         ;; style returned a non-deferred result. Convert the result to the
         ;; new format (base highlight-function . completions).
         (let* ((last (last result))
                (base (or (cdr last) 0)))
           (setcdr last nil)
-          `(,base identity . ,result))
+          `(:base ,base :highlight identity :completions ,result))
       result)))
 
 (defun minibuffer--bitset (modified completions exact)
@@ -2061,10 +2062,10 @@ See also the face `completions-first-difference'.")
 (defun completion--deferred-hilit (completions prefix-len base-size defer)
   (if defer
       (when completions
-        `(,(or base-size 0)
-          ,(lambda (completions)
+        `(:base ,(or base-size 0)
+          :highlight ,(lambda (completions)
              (completion--hilit-commonality completions (- prefix-len (or base-size 0))))
-          . ,completions))
+          :completions ,completions))
     (completion-hilit-commonality completions prefix-len base-size)))
 
 (defun completion--hilit-commonality (completions com-size)
@@ -3546,14 +3547,14 @@ one-letter-long matches).")
 (defun completion-pcm--deferred-hilit (base pattern completions defer)
   (when completions
     (if defer
-        `(,base
-          ,(lambda (completions)
+        `(:base ,base
+          :highlight ,(lambda (completions)
              ;; TODO `completion-pcm--hilit-commonality' sometimes throws an internal error
              ;; for example when entering "/sudo:://u".
              (condition-case nil
                  (completion-pcm--hilit-commonality pattern completions)
                (t completions)))
-          . ,completions)
+          :completions ,completions)
       (nconc (completion-pcm--hilit-commonality pattern completions) base))))
 
 (defun completion-pcm--hilit-commonality (pattern completions)
