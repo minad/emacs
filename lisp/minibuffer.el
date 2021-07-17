@@ -1147,15 +1147,15 @@ POINT is the position of point within STRING.
 The return value is a list of completions and may contain the base-size
 in the last `cdr'."
   (let ((result (completion--nth-completion 2 string table pred point metadata nil)))
-    (if (and result (keywordp (car result)))
+    (if (and result (consp (car result)))
         ;; Give the completion styles some freedom!
         ;; If they are targeting Emacs 28 upwards only, they
         ;; may always return a result with deferred
         ;; highlighting.  We convert back to the old format
         ;; here by applying the highlighting eagerly.
-        (nconc (funcall (plist-get result :highlight)
-                        (plist-get result :completions))
-               (plist-get result :base))
+        (nconc (funcall (cdr (assq 'highlight result))
+                        (cdr (assq 'completions result)))
+               (cdr (assq 'base result)))
       result)))
 
 (defun completion-filtered-completions (string table pred point metadata)
@@ -1175,14 +1175,14 @@ in the last `cdr'."
   ;; the completion style.  In my opinion the frontend should
   ;; highlight the matches as provided by the completion style.
   (let ((result (completion--nth-completion 2 string table pred point metadata 'defer)))
-    (if (and result (not (keywordp (car result))))
+    (if (and result (not (consp (car result))))
         ;; Deferred highlighting has been requested, but the completion
         ;; style returned a non-deferred result. Convert the result to the
         ;; new format (base highlight-function . completions).
         (let* ((last (last result))
                (base (or (cdr last) 0)))
           (setcdr last nil)
-          `(:base ,base :highlight identity :completions ,result))
+          `((base . ,base) (highlight . identity) (completions . ,result)))
       result)))
 
 (defun minibuffer--bitset (modified completions exact)
@@ -2096,10 +2096,10 @@ See also the face `completions-first-difference'.")
 (defun completion--deferred-hilit (completions prefix-len base-size defer)
   (if defer
       (when completions
-        `(:base ,(or base-size 0)
-          :highlight ,(lambda (completions)
-             (completion--hilit-commonality completions (- prefix-len (or base-size 0))))
-          :completions ,completions))
+        `((base . ,(or base-size 0))
+          (highlight . ,(lambda (completions)
+                          (completion--hilit-commonality completions (- prefix-len (or base-size 0)))))
+          (completions . ,completions)))
     (completion-hilit-commonality completions prefix-len base-size)))
 
 (defun completion--hilit-commonality (completions com-size)
@@ -3603,14 +3603,14 @@ one-letter-long matches).")
 (defun completion-pcm--deferred-hilit (base pattern completions defer)
   (when completions
     (if defer
-        `(:base ,base
-          :highlight ,(lambda (completions)
-             ;; TODO `completion-pcm--hilit-commonality' sometimes throws an internal error
-             ;; for example when entering "/sudo:://u".
-             (condition-case nil
-                 (completion-pcm--hilit-commonality pattern completions)
-               (t completions)))
-          :completions ,completions)
+        `((base . ,base)
+          (highlight . ,(lambda (completions)
+                          ;; TODO `completion-pcm--hilit-commonality' sometimes throws an internal error
+                          ;; for example when entering "/sudo:://u".
+                          (condition-case nil
+                              (completion-pcm--hilit-commonality pattern completions)
+                            (t completions))))
+          (completions . ,completions))
       (nconc (completion-pcm--hilit-commonality pattern completions) base))))
 
 (defun completion-pcm--hilit-commonality (pattern completions)
