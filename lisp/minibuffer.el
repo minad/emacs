@@ -1035,7 +1035,9 @@ This overrides the defaults specified in `completion-category-defaults'."
         (delete-dups (append (cdr over) (copy-sequence completion-styles)))
        completion-styles)))
 
-(defun completion--nth-completion (n string table pred point metadata defer)
+(defvar completion--deferred-highlighting nil)
+
+(defun completion--nth-completion (n string table pred point metadata)
   "Call the Nth method of completion styles."
   ;; We provide special support for quoting/unquoting here because it cannot
   ;; reliably be done within the normal completion-table routines: Completion
@@ -1062,7 +1064,7 @@ This overrides the defaults specified in `completion-category-defaults'."
                  (functionp table))
             (let ((new (funcall table string point 'completion--unquote)))
               ;; FIXME Do not attempt deferred highlighting if quoting is used
-              (setq defer nil)
+              (setq completion--deferred-highlighting nil)
               (setq string (pop new))
               (setq table (pop new))
               (setq point (pop new))
@@ -1072,23 +1074,7 @@ This overrides the defaults specified in `completion-category-defaults'."
           (completion--some
            (lambda (style)
              (let* ((fun (nth n (assq style completion-styles-alist)))
-                    (probe
-                     (if defer
-                         ;; When deferred highlighting has been
-                         ;; requested, try to call the completion
-                         ;; style function first with the additional
-                         ;; defer argument. If this does not work out,
-                         ;; try the function again without the
-                         ;; additional argument. There is a slight
-                         ;; chance that this shadows
-                         ;; `wrong-number-of-arguments' bugs in the
-                         ;; completion styles function, which only
-                         ;; occur when the defer argument is non-nil.
-                         (condition-case nil
-                             (funcall fun string table pred point 'defer)
-                           (wrong-number-of-arguments
-                            (funcall fun string table pred point)))
-                       (funcall fun string table pred point))))
+                    (probe (funcall fun string table pred point)))
                (and probe (cons probe style))))
            (completion--styles md)))
 
@@ -1138,7 +1124,7 @@ The return value can be either nil to indicate that there is no completion,
 t to indicate that STRING is the only possible completion,
 or a pair (NEWSTRING . NEWPOINT) of the completed result string together with
 a new position for point."
-  (completion--nth-completion 1 string table pred point metadata nil))
+  (completion--nth-completion 1 string table pred point metadata))
 
 (defun completion-all-completions (string table pred point &optional metadata)
   "List the possible completions of STRING in completion table TABLE.
@@ -1146,7 +1132,8 @@ Only the elements of table that satisfy predicate PRED are considered.
 POINT is the position of point within STRING.
 The return value is a list of completions and may contain the base-size
 in the last `cdr'."
-  (let ((result (completion--nth-completion 2 string table pred point metadata nil)))
+  (let ((completion--deferred-highlighting nil)
+        (result (completion--nth-completion 2 string table pred point metadata)))
     (if (and result (consp (car result)))
         ;; Give the completion styles some freedom!
         ;; If they are targeting Emacs 28 upwards only, they
@@ -1174,7 +1161,8 @@ in the last `cdr'."
   ;; even semantic) faces. The frontend would therefore be coupled to
   ;; the completion style.  In my opinion the frontend should
   ;; highlight the matches as provided by the completion style.
-  (let ((result (completion--nth-completion 2 string table pred point metadata 'defer)))
+  (let* ((completion--deferred-highlighting t)
+         (result (completion--nth-completion 2 string table pred point metadata)))
     (if (and result (not (consp (car result))))
         ;; Deferred highlighting has been requested, but the completion
         ;; style returned a non-deferred result. Convert the result to the
@@ -2093,8 +2081,8 @@ See also the face `completions-common-part'.")
   "Face for the parts of completions which matched the pattern.
 See also the face `completions-first-difference'.")
 
-(defun completion--deferred-hilit (completions prefix-len base-size defer)
-  (if defer
+(defun completion--deferred-hilit (completions prefix-len base-size)
+  (if completion--deferred-highlighting
       (when completions
         `((base . ,(or base-size 0))
           (highlight . ,(lambda (completions)
@@ -3316,12 +3304,11 @@ Like `internal-complete-buffer', but removes BUFFER from the completion list."
         (cons completion (length completion))
       completion)))
 
-(defun completion-emacs21-all-completions (string table pred _point &optional defer)
+(defun completion-emacs21-all-completions (string table pred _point)
   (completion--deferred-hilit
    (all-completions string table pred)
    (length string)
-   (car (completion-boundaries string table pred ""))
-   defer))
+   (car (completion-boundaries string table pred ""))))
 
 (defun completion-emacs22-try-completion (string table pred point)
   (let ((suffix (substring string point))
@@ -3343,13 +3330,12 @@ Like `internal-complete-buffer', but removes BUFFER from the completion list."
           (setq suffix (substring suffix 1)))
       (cons (concat completion suffix) (length completion)))))
 
-(defun completion-emacs22-all-completions (string table pred point &optional defer)
+(defun completion-emacs22-all-completions (string table pred point)
   (let ((beforepoint (substring string 0 point)))
     (completion--deferred-hilit
      (all-completions beforepoint table pred)
      point
-     (car (completion-boundaries beforepoint table pred ""))
-     defer)))
+     (car (completion-boundaries beforepoint table pred "")))))
 
 ;;; Basic completion.
 
@@ -3397,7 +3383,7 @@ Return the new suffix."
             (setq all (completion-pcm--filename-try-filter all)))
         (completion-pcm--merge-try pattern all prefix suffix)))))
 
-(defun completion-basic-all-completions (string table pred point &optional defer)
+(defun completion-basic-all-completions (string table pred point)
   (let* ((beforepoint (substring string 0 point))
          (afterpoint (substring string point))
          (bounds (completion-boundaries beforepoint table pred afterpoint))
@@ -3408,7 +3394,7 @@ Return the new suffix."
                             'point
                             (substring afterpoint 0 (cdr bounds)))))
          (all (completion-pcm--all-completions prefix pattern table pred)))
-    (completion--deferred-hilit all point (car bounds) defer)))
+    (completion--deferred-hilit all point (car bounds))))
 
 ;;; Partial-completion-mode style completion.
 
@@ -3600,9 +3586,9 @@ one large \"hole\" and a clumped-together \"oo\" match) higher
 than the latter (which has two \"holes\" and three
 one-letter-long matches).")
 
-(defun completion-pcm--deferred-hilit (base pattern completions defer)
+(defun completion-pcm--deferred-hilit (base pattern completions)
   (when completions
-    (if defer
+    (if completion--deferred-highlighting
         `((base . ,base)
           (highlight . ,(lambda (completions)
                           ;; TODO `completion-pcm--hilit-commonality' sometimes throws an internal error
@@ -3848,10 +3834,10 @@ filter out additional entries (because TABLE might not obey PRED)."
           (signal (car firsterror) (cdr firsterror))
         (list pattern all prefix suffix)))))
 
-(defun completion-pcm-all-completions (string table pred point &optional defer)
+(defun completion-pcm-all-completions (string table pred point)
   (pcase-let ((`(,pattern ,all ,prefix ,_suffix)
                (completion-pcm--find-all-completions string table pred point)))
-    (completion-pcm--deferred-hilit (length prefix) pattern all defer)))
+    (completion-pcm--deferred-hilit (length prefix) pattern all)))
 
 (defun completion--common-suffix (strs)
   "Return the common suffix of the strings STRS."
@@ -4073,11 +4059,11 @@ that is non-nil."
         (setq all (completion-pcm--filename-try-filter all)))
     (completion-pcm--merge-try pattern all prefix suffix)))
 
-(defun completion-substring-all-completions (string table pred point &optional defer)
+(defun completion-substring-all-completions (string table pred point)
   (pcase-let ((`(,all ,pattern ,prefix ,_suffix ,_carbounds)
                (completion-substring--all-completions
                 string table pred point)))
-    (completion-pcm--deferred-hilit (length prefix) pattern all defer)))
+    (completion-pcm--deferred-hilit (length prefix) pattern all)))
 
 ;;; "flex" completion, also known as flx/fuzzy/scatter completion
 ;; Completes "foo" to "frodo" and "farfromsober"
@@ -4157,14 +4143,14 @@ which is at the core of flex logic.  The extra
       ;; "farfromsober".
       (completion-pcm--merge-try pattern all prefix suffix))))
 
-(defun completion-flex-all-completions (string table pred point &optional defer)
+(defun completion-flex-all-completions (string table pred point)
   "Get flex-completions of STRING in TABLE, given PRED and POINT."
   (unless (and completion-flex-nospace (string-search " " string))
     (pcase-let ((`(,all ,pattern ,prefix ,_suffix ,_carbounds)
                  (completion-substring--all-completions
                   string table pred point
                   #'completion-flex--make-flex-pattern)))
-      (completion-pcm--deferred-hilit (length prefix) pattern all defer))))
+      (completion-pcm--deferred-hilit (length prefix) pattern all))))
 
 ;; Initials completion
 ;; Complete /ums to /usr/monnier/src or lch to list-command-history.
