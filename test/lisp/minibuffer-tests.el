@@ -188,10 +188,6 @@
                   '("some/alpha" "base/epsilon" "base/delta"))
                  `("epsilon" "delta" "beta" "alpha" "gamma"  . 5))))
 
-(defun completion--pcm-score (comp)
-  "Get `completion-score' from COMP."
-  (get-text-property 0 'completion-score comp))
-
 (defun completion--pcm-first-difference-pos (comp)
   "Get `completions-first-difference' from COMP."
   (cl-loop for pos = (next-single-property-change 0 'face comp)
@@ -215,25 +211,12 @@
            "barfoobar")))
 
 (ert-deftest completion-pcm-test-3 ()
-  ;; Full match!
-  (should (eql
-           (completion--pcm-score
-            (car (completion-pcm-all-completions
-                  "R" '("R" "hello") nil 1)))
-           1.0)))
-
-(ert-deftest completion-pcm-test-4 ()
-  ;; One fourth of a match and no match due to point being at the end
-  (should (eql
-           (completion--pcm-score
-            (car (completion-pcm-all-completions
-                  "RO" '("RaOb") nil 1)))
-           (/ 1.0 4.0)))
+  ;; No match due to point being at the end
   (should (null
            (completion-pcm-all-completions
             "RO" '("RaOb") nil 2))))
 
-(ert-deftest completion-pcm-test-5 ()
+(ert-deftest completion-pcm-test-4 ()
   ;; Since point is at the beginning, there is nothing that can really
   ;; be typed anymore
   (should (null
@@ -241,7 +224,7 @@
             (car (completion-pcm-all-completions
                   "f" '("few" "many") nil 0))))))
 
-(ert-deftest completion-pcm-test-6 ()
+(ert-deftest completion-pcm-test-5 ()
   ;; Wildcards and delimiters work
   (should (equal
            (car (completion-pcm-all-completions
@@ -252,26 +235,12 @@
                  "li-pac*" '("do-not-list-packages") nil 7)))))
 
 (ert-deftest completion-substring-test-1 ()
-  ;; One third of a match!
   (should (equal
            (car (completion-substring-all-completions
                  "foo" '("hello" "world" "barfoobar") nil 3))
-           "barfoobar"))
-  (should (eql
-           (completion--pcm-score
-            (car (completion-substring-all-completions
-                  "foo" '("hello" "world" "barfoobar") nil 3)))
-           (/ 1.0 3.0))))
+           "barfoobar")))
 
 (ert-deftest completion-substring-test-2 ()
-  ;; Full match!
-  (should (eql
-           (completion--pcm-score
-            (car (completion-substring-all-completions
-                  "R" '("R" "hello") nil 1)))
-           1.0)))
-
-(ert-deftest completion-substring-test-3 ()
   ;; Substring match
   (should (equal
            (car (completion-substring-all-completions
@@ -281,7 +250,7 @@
            (car (completion-substring-all-completions
                  "custgroup" '("customize-group") nil 5)))))
 
-(ert-deftest completion-substring-test-4 ()
+(ert-deftest completion-substring-test-3 ()
   ;; `completions-first-difference' should be at the right place
   (should (eql
            (completion--pcm-first-difference-pos
@@ -306,14 +275,6 @@
            "fabrobazo")))
 
 (ert-deftest completion-flex-test-2 ()
-  ;; Full match!
-  (should (eql
-           (completion--pcm-score
-            (car (completion-flex-all-completions
-                  "R" '("R" "hello") nil 1)))
-           1.0)))
-
-(ert-deftest completion-flex-test-3 ()
   ;; Another fuzzy match, but more of a "substring" one
   (should (equal
            (car (completion-flex-all-completions
@@ -330,6 +291,24 @@
             (car (completion-flex-all-completions
                   "custgroup" '("customize-group-other-window") nil 9)))
            15)))
+
+(ert-deftest completion-flex-score-test-1 ()
+  ;; Full match!
+  (should (equal
+           (completion--flex-score '(prefix "R") '("R"))
+           (list (cons -1.0 "R")))))
+
+(ert-deftest completion-flex-score-test-2 ()
+  ;; One third and half of a match!
+  (should (equal
+           (completion--flex-score '(prefix "foo") '("barfoobar" "fooboo"))
+           (list (cons (/ -1.0 3.0) "barfoobar") (cons (/ -1.0 2.0) "fooboo")))))
+
+(ert-deftest completion-flex-score-test-3 ()
+  ;; One fourth of a match
+  (should (eql
+           (caar (completion--flex-score '(prefix "R" point "O") '("RaOb")))
+           (/ -1.0 4.0))))
 
 (provide 'minibuffer-tests)
 ;;; minibuffer-tests.el ends here
