@@ -692,7 +692,10 @@ for use at QPOS."
                                              'completions-common-part)
                                qprefix))))
                         (qcompletion (concat qprefix qnew)))
-                   ;; TODO ATTACH UNQUOTED STRING HERE!
+                   ;; Attach unquoted completion string, which is needed
+                   ;; to score the completion in `completion--flex-score'.
+                   (put-text-property 0 1 'completion--unquoted
+                                      completion qcompletion)
 		   ;; FIXME: Similarly here, Cygwin's mapping trips this
 		   ;; assertion.
                    ;;(cl-assert
@@ -3643,12 +3646,15 @@ match."
            last-md)
       (mapcar
        (lambda (str)
-         ;; TODO access unquoted string here!!!
-         ;; FIXME The flex completion style requires the resulting
-         ;; candidates to match the pattern during the scoring
-         ;; computation. Can it happen that after quoting/requoting,
-         ;; the pattern does not match anymore? In this case we should
-         ;; not fail hard here!
+         ;; The flex completion style requires the completion to match
+         ;; the pattern to compute the scoring.  For quoted completion
+         ;; tables the completions are matched against the *unquoted
+         ;; input string*.  However `completion-all-completions' and
+         ;; `completion-filter-completions' return a list of *quoted
+         ;; completions*, which is subsequently sorted.  Therefore we
+         ;; obtain the unquoted completion string which is stored in
+         ;; the text property `completion--unquoted'.
+         (setq str (or (get-text-property 0 'completion--unquoted str) str))
          (unless (string-match re str)
            (error "Internal error: %s does not match %s" re str))
          (let* ((match-end (match-end 0))
