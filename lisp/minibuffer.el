@@ -1148,7 +1148,7 @@ This function supersedes the function `completion-all-completions'."
                (base (or (cdr last) 0)))
           (setcdr last nil)
           `((base . ,base)
-            (end . ,(- (length string) point))
+            (end . ,(- (length string) point)) ;; TODO FIXME
             (highlight . identity)
             (completions . ,result)))
       result)))

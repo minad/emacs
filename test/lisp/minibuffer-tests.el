@@ -310,5 +310,86 @@
            (caar (completion--flex-score '(prefix "R" point "O") '("RaOb")))
            (/ -1.0 4.0))))
 
+(ert-deftest completion-filter-completions-test-basic-1 ()
+  ;; point at the beginning |foo
+  (let* ((completion-styles '(basic))
+         (result (completion-filter-completions
+                  "foo" '("foobar" "barfoo" "xfooy" "boobar") nil 0 nil)))
+    (should (equal (alist-get 'base result) 0))
+    (should (equal (alist-get 'end result) 3))
+    (should (equal (alist-get 'completions result)
+                   '("foobar" "barfoo" "xfooy")))
+    (should (not (memq (alist-get 'highlight result) '(nil identity))))))
+
+(ert-deftest completion-filter-completions-test-basic-2 ()
+  ;; point fo|o
+  (let* ((completion-styles '(basic))
+         (result (completion-filter-completions
+                  "foo" '("foobar" "fobar" "barfoo" "xfooy" "boobar") nil 1 nil)))
+    (should (equal (alist-get 'base result) 0))
+    (should (equal (alist-get 'end result) 2))
+    (should (equal (alist-get 'completions result)
+                   '("foobar")))
+    (should (not (memq (alist-get 'highlight result) '(nil identity))))))
+
+(ert-deftest completion-filter-completions-test-substring ()
+  (let* ((completion-styles '(substring))
+         (result (completion-filter-completions
+                  "foo" '("foobar" "barfoo" "xfooy" "boobar") nil 1 nil)))
+    (should (equal (alist-get 'base result) 0))
+    (should (equal (alist-get 'end result) 2))
+    (should (equal (alist-get 'completions result)
+                   '("foobar" "barfoo" "xfooy")))
+    (should (not (memq (alist-get 'highlight result) '(nil identity))))))
+
+(ert-deftest completion-filter-completions-test-emacs21 ()
+  (let* ((completion-styles '(emacs21))
+         (result (completion-filter-completions
+                  "foo" '("foobar" "fobar" "barfoo" "xfooy" "boobar") nil 1 nil)))
+    (should (equal (alist-get 'base result) 0))
+    (should (equal (alist-get 'end result) 0)) ;; FIXME: suffix ignored completely
+    (should (equal (alist-get 'completions result) '("foobar")))
+    (should (not (memq (alist-get 'highlight result) '(nil identity))))))
+
+(ert-deftest completion-filter-completions-test-emacs22 ()
+  (let* ((completion-styles '(emacs22))
+         (result (completion-filter-completions
+                  "fo0" '("foobar" "fobar" "barfoo" "xfooy" "boobar") nil 1 nil)))
+    (should (equal (alist-get 'base result) 0))
+    (should (equal (alist-get 'end result) 0)) ;; suffix ignored completely
+    (should (equal (alist-get 'completions result)
+                   '("foobar" "fobar"))) ;; suffix ignored completely
+    (should (not (memq (alist-get 'highlight result) '(nil identity))))))
+
+(ert-deftest completion-filter-completions-test-flex ()
+  (let* ((completion-styles '(flex))
+         (result (completion-filter-completions
+                  "abc" '("abc" "xaybzc" "xaybz") nil 1 nil)))
+    (should (equal (alist-get 'base result) 0))
+    (should (equal (alist-get 'end result) 2))
+    (should (equal (alist-get 'completions result)
+                   '("abc" "xaybzc")))
+    (should (not (memq (alist-get 'highlight result) '(nil identity))))))
+
+(ert-deftest completion-filter-completions-test-initials ()
+  (let* ((completion-styles '(initials))
+         (result (completion-filter-completions
+                  "abc" '("a-b-c" "ax-by-cz" "xax-by-cz") nil 1 nil)))
+    (should (equal (alist-get 'base result) 0))
+    (should (equal (alist-get 'end result) 0)) ;; TODO FIXME
+    (should (equal (alist-get 'completions result)
+                   '("a-b-c" "ax-by-cz")))
+    (should (not (memq (alist-get 'highlight result) '(nil identity))))))
+
+(ert-deftest completion-filter-completions-test-partial-completion ()
+  (let* ((completion-styles '(partial-completion))
+         (result (completion-filter-completions
+                  "ax-b-c" '("ax-b-c" "ax-by-cz" "xax-by-cz") nil 1 nil)))
+    (should (equal (alist-get 'base result) 0))
+    (should (equal (alist-get 'end result) 5))
+    (should (equal (alist-get 'completions result)
+                   '("ax-b-c" "ax-by-cz")))
+    (should (not (memq (alist-get 'highlight result) '(nil identity))))))
+
 (provide 'minibuffer-tests)
 ;;; minibuffer-tests.el ends here
