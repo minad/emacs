@@ -692,6 +692,7 @@ for use at QPOS."
                                              'completions-common-part)
                                qprefix))))
                         (qcompletion (concat qprefix qnew)))
+                   ;; TODO ATTACH UNQUOTED STRING HERE!
 		   ;; FIXME: Similarly here, Cygwin's mapping trips this
 		   ;; assertion.
                    ;;(cl-assert
@@ -3642,6 +3643,7 @@ match."
            last-md)
       (mapcar
        (lambda (str)
+         ;; TODO access unquoted string here!!!
          ;; FIXME The flex completion style requires the resulting
          ;; candidates to match the pattern during the scoring
          ;; computation. Can it happen that after quoting/requoting,
