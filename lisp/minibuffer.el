@@ -1167,7 +1167,7 @@ Moves point to the end of the new text."
   (if minibuffer-allow-text-properties
       ;; If we're preserving properties, then just remove the faces
       ;; added by the completion machinery.
-      (remove-text-properties 0 (length newtext) '(face) newtext)
+      (remove-text-properties 0 (length newtext) '(face nil) newtext)
     ;; Remove all text properties.
     (set-text-properties 0 (length newtext) nil newtext))
   ;; Maybe this should be in subr.el.

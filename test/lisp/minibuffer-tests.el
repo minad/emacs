@@ -391,5 +391,24 @@
                    '("ax-b-c" "ax-by-cz")))
     (should (not (memq (alist-get 'highlight result) '(nil identity))))))
 
+(ert-deftest completion-filter-completions-highlight-test ()
+  ;; point at the beginning |foo
+  (let* ((completion-styles '(basic))
+         (result (completion-filter-completions
+                  "foo" '("foobar" "fbarfoo" "fxfooy" "bar") nil 1 nil)))
+    (should (equal
+             (format "%S" (alist-get 'completions result))
+             (format "%S" '("foobar" "fbarfoo" "fxfooy"))))
+    (should (equal
+             (format "%S" (funcall (alist-get 'highlight result)
+                                   (alist-get 'completions result)))
+             (format "%S"
+                     '(#("foobar" 0 1 (face (completions-common-part))
+                         1 2 (face (completions-first-difference)))
+                       #("fbarfoo" 0 1 (face (completions-common-part))
+                         1 2 (face (completions-first-difference)))
+                       #("fxfooy" 0 1 (face (completions-common-part))
+                         1 2 (face (completions-first-difference)))))))))
+
 (provide 'minibuffer-tests)
 ;;; minibuffer-tests.el ends here
