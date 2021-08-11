@@ -1085,13 +1085,13 @@ This overrides the defaults specified in `completion-category-defaults'."
          ;; chance to clean this up.
          ;;
          ;; Since we are introducing a new return value format for
-         ;; `completion-filtered-completions', we should probably also
+         ;; `completion-filter-completions', we should probably also
          ;; return the sort-cycle-fun and the display-cycle-fun or
          ;; alternatively return the style-specific metadata.
          ;; But I don't really see a point in allowing arbitrary metadata adjustments.
          ;; Completion styles should only do filtering and sorting.
          ;;
-         ;; Since the return value of `completion-filtered-completions' is
+         ;; Since the return value of `completion-filter-completions' is
          ;; extensible (plist), it could look like this:
          ;;
          ;; (:base base
@@ -1145,7 +1145,7 @@ in the last `cdr'."
                (cdr (assq 'base result)))
       result)))
 
-(defun completion-filtered-completions (string table pred point metadata)
+(defun completion-filter-completions (string table pred point metadata)
   "List the possible completions of STRING in completion table TABLE.
 Only the elements of table that satisfy predicate PRED are considered.
 POINT is the position of point within STRING.
