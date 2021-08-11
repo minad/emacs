@@ -1035,7 +1035,16 @@ This overrides the defaults specified in `completion-category-defaults'."
         (delete-dups (append (cdr over) (copy-sequence completion-styles)))
        completion-styles)))
 
-(defvar completion--deferred-highlighting nil)
+(defvar completion--filter-completions nil
+  "Enable the new completions return value format.
+If this variable is non-nil the `all-completions' function of the
+completion styles should return the results in the new alist format of
+`completion-filter-completions'.  This variable is purely needed to
+for backward compatibility of the existing builtin completion style
+functions.  New completion style functions may always return their
+results in the new alist format, since `completion-all-completions'
+transparently converts back to the old improper list of completions
+with base size in the last cdr.")
 
 (defun completion--nth-completion (n string table pred point metadata)
   "Call the Nth method of completion styles."
@@ -1064,7 +1073,7 @@ This overrides the defaults specified in `completion-category-defaults'."
                  (functionp table))
             (let ((new (funcall table string point 'completion--unquote)))
               ;; FIXME Do not attempt deferred highlighting if quoting is used
-              (setq completion--deferred-highlighting nil)
+              (setq completion--filter-completions nil)
               (setq string (pop new))
               (setq table (pop new))
               (setq point (pop new))
@@ -1132,7 +1141,7 @@ Only the elements of table that satisfy predicate PRED are considered.
 POINT is the position of point within STRING.
 The return value is a list of completions and may contain the base-size
 in the last `cdr'."
-  (let ((completion--deferred-highlighting nil)
+  (let ((completion--filter-completions nil)
         (result (completion--nth-completion 2 string table pred point metadata)))
     (if (and result (consp (car result)))
         ;; Give the completion styles some freedom!
@@ -1161,7 +1170,7 @@ in the last `cdr'."
   ;; even semantic) faces. The frontend would therefore be coupled to
   ;; the completion style.  In my opinion the frontend should
   ;; highlight the matches as provided by the completion style.
-  (let* ((completion--deferred-highlighting t)
+  (let* ((completion--filter-completions t)
          (result (completion--nth-completion 2 string table pred point metadata)))
     (if (and result (not (consp (car result))))
         ;; Deferred highlighting has been requested, but the completion
@@ -2082,7 +2091,7 @@ See also the face `completions-common-part'.")
 See also the face `completions-first-difference'.")
 
 (defun completion--deferred-hilit (completions prefix-len base-size)
-  (if completion--deferred-highlighting
+  (if completion--filter-completions
       (when completions
         `((base . ,(or base-size 0))
           (highlight . ,(lambda (completions)
@@ -3588,7 +3597,7 @@ one-letter-long matches).")
 
 (defun completion-pcm--deferred-hilit (base pattern completions)
   (when completions
-    (if completion--deferred-highlighting
+    (if completion--filter-completions
         `((base . ,base)
           (highlight . ,(lambda (completions)
                           ;; TODO `completion-pcm--hilit-commonality' sometimes throws an internal error
