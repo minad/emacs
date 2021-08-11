@@ -2227,15 +2227,16 @@ variables.")
          (end (or end (point-max)))
          (string (buffer-substring start end))
          (md (completion--field-metadata start))
-         (completions (completion-all-completions
-                       string
-                       minibuffer-completion-table
-                       minibuffer-completion-predicate
-                       (- (point) start)
-                       md)))
+         (filtered-completions (completion-filter-completions
+                                string
+                                minibuffer-completion-table
+                                minibuffer-completion-predicate
+                                (- (point) start)
+                                md))
+         (completions (alist-get 'completions filtered-completions)))
     (message nil)
     (if (or (null completions)
-            (and (not (consp (cdr completions)))
+            (and (not (cdr completions))
                  (equal (car completions) string)))
         (progn
           ;; If there are no completions, or if the current input is already
@@ -2245,8 +2246,7 @@ variables.")
           (completion--message
            (if completions "Sole completion" "No completions")))
 
-      (let* ((last (last completions))
-             (base-size (or (cdr last) 0))
+      (let* ((base-size (alist-get 'base filtered-completions))
              (prefix (unless (zerop base-size) (substring string 0 base-size)))
              (all-md (completion--metadata (buffer-substring-no-properties
                                             start (point))
@@ -2290,9 +2290,10 @@ variables.")
             (body-function
              . ,#'(lambda (_window)
                     (with-current-buffer mainbuf
-                      ;; Remove the base-size tail because `sort' requires a properly
-                      ;; nil-terminated list.
-                      (when last (setcdr last nil))
+                      ;; Apply highlighting
+                      (setq completions
+                            (funcall (alist-get 'highlight filtered-completions)
+                                     completions))
 
                       ;; Sort first using the `display-sort-function'.
                       ;; FIXME: This function is for the output of
@@ -2331,13 +2332,10 @@ variables.")
                                       completions))))
 
                       (with-current-buffer standard-output
-                        (setq-local completion-base-position
-                             (list (+ start base-size)
-                                   ;; FIXME: We should pay attention to completion
-                                   ;; boundaries here, but currently
-                                   ;; completion-all-completions does not give us the
-                                   ;; necessary information.
-                                   end))
+                        (setq-local
+                         completion-base-position
+                         (list (+ start base-size)
+                               (+ start (alist-get 'end filtered-completions))))
                         (setq-local completion-list-insert-choice-function
                              (let ((ctable minibuffer-completion-table)
                                    (cpred minibuffer-completion-predicate)
