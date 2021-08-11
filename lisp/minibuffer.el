@@ -2078,12 +2078,12 @@ See also the face `completions-first-difference'.")
       (when completions
         `((base . ,(car bounds))
           (end . ,(cdr bounds))
-          (highlight . ,(lambda (completions)
-                          (completion--hilit-commonality completions (- prefix-len (car bounds)))))
+          (highlight . ,(apply-partially #'completion--hilit-commonality
+                                         (- prefix-len (car bounds))))
           (completions . ,completions)))
     (completion-hilit-commonality completions prefix-len (car bounds))))
 
-(defun completion--hilit-commonality (completions com-size)
+(defun completion--hilit-commonality (com-size completions)
   (mapcar
    (lambda (elem)
      (let ((str
@@ -2122,7 +2122,7 @@ It returns a list with font-lock properties applied to each element,
 and with BASE-SIZE appended as the last element."
   (when completions
     (nconc
-     (completion--hilit-commonality completions (- prefix-len (or base-size 0)))
+     (completion--hilit-commonality (- prefix-len (or base-size 0)) completions)
      base-size)))
 
 (defun display-completion-list (completions &optional common-substring group-fun)
@@ -3585,13 +3585,8 @@ one-letter-long matches).")
     (if completion--filter-completions
         `((base . ,(car bounds))
           (end . ,(cdr bounds))
-          (highlight . ,(lambda (completions)
-                          ;; FIXME `completion-pcm--hilit-commonality'
-                          ;; sometimes throws an internal error for
-                          ;; example when entering "/sudo:://u".
-                          (condition-case nil
-                              (completion-pcm--hilit-commonality pattern completions)
-                            (t completions))))
+          (highlight . ,(apply-partially #'completion-pcm--hilit-commonality
+                                         pattern))
           (completions . ,completions))
       (nconc (completion-pcm--hilit-commonality pattern completions) (car bounds)))))
 
