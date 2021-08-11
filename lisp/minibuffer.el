@@ -1138,8 +1138,8 @@ the keys:
 
 - base: Base size of the completion (`car' of `completion-boundaries')
 - end: End position of the completion (`cdr' of `completion-boundaries')
-- highlight: Highlighting function taking a candidate string and
-  returning a new string with applied highlighting.
+- highlight: Highlighting function taking a list of completions and
+  returning a new list of new strings with applied highlighting.
 - completions: The list of completions.
 
 This function supersedes the function `completion-all-completions'."
@@ -2073,6 +2073,7 @@ See also the face `completions-common-part'.")
 See also the face `completions-first-difference'.")
 
 (defun completion--deferred-hilit (completions prefix-len bounds)
+  "Return completions in alist format if `completion--filter-completions' is non-nil."
   (if completion--filter-completions
       (when completions
         `((base . ,(car bounds))
@@ -3579,13 +3580,15 @@ than the latter (which has two \"holes\" and three
 one-letter-long matches).")
 
 (defun completion-pcm--deferred-hilit (bounds pattern completions)
+  "Return completions in alist format if `completion--filter-completions' is non-nil."
   (when completions
     (if completion--filter-completions
         `((base . ,(car bounds))
           (end . ,(cdr bounds))
           (highlight . ,(lambda (completions)
-                          ;; TODO `completion-pcm--hilit-commonality' sometimes throws an internal error
-                          ;; for example when entering "/sudo:://u".
+                          ;; FIXME `completion-pcm--hilit-commonality'
+                          ;; sometimes throws an internal error for
+                          ;; example when entering "/sudo:://u".
                           (condition-case nil
                               (completion-pcm--hilit-commonality pattern completions)
                             (t completions))))
