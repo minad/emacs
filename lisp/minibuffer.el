@@ -1090,11 +1090,6 @@ with base size in the last cdr.")
     (when (and style-specific-md metadata)
       (setcdr metadata (cdr (funcall style-specific-md string table pred point metadata))))
     (if requote
-        ;; XXX Here is still a thing which worries me: The flex completion
-        ;; style requires the resulting candidates to match the pattern
-        ;; during the scoring computation in the scoring. Can it happen
-        ;; that requoting messes this up somehow? Can it happen that after
-        ;; requoting the candidates don't match anymore?
         (funcall requote (car result-and-style) n)
       (car result-and-style))))
 
@@ -1143,12 +1138,6 @@ the keys:
 - completions: The list of completions.
 
 This function supersedes the function `completion-all-completions'."
-  ;; TODO: The highlight function should take a list of faces. Stefan
-  ;; Monnier argues that this facilitates some use cases in Company.
-  ;; However the completion style is free to define its own (maybe
-  ;; even semantic) faces. The frontend would therefore be coupled to
-  ;; the completion style.  In my opinion the frontend should
-  ;; highlight the matches as provided by the completion style.
   (let* ((completion--filter-completions t)
          (result (completion--nth-completion 2 string table pred point metadata)))
     (if (and result (not (consp (car result))))
@@ -3647,7 +3636,11 @@ between 0 and 1, and with faces `completions-common-part',
            last-md)
       (mapcar
        (lambda (str)
-         ;; FIXME Do not fail hard here, potential problem with requoting?
+         ;; FIXME The flex completion style requires the resulting
+         ;; candidates to match the pattern during the scoring
+         ;; computation. Can it happen that after quoting/requoting,
+         ;; the pattern does not match anymore? In this case we should
+         ;; not fail hard here!
          (unless (string-match re str)
            (error "Internal error: %s does not match %s" re str))
          (let* ((match-end (match-end 0))
