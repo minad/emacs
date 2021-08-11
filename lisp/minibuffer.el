@@ -4078,38 +4078,37 @@ that is non-nil."
 (put 'flex 'completion--style-specific-metadata 'completion--flex-style-specific-metadata)
 
 (defun completion--flex-style-specific-metadata (string table pred point metadata)
-  (let ((pattern (car (completion--pattern-compiler
-                       string table pred point
-                       #'completion-flex--make-flex-pattern))))
-  (cl-flet
-      ((compose-flex-sort-fn
-        (existing-sort-fn) ; wish `cl-flet' had proper indentation...
-        (lambda (completions)
-          (let ((pre-sorted
-                 (if existing-sort-fn
-                     (funcall existing-sort-fn completions)
-                   completions)))
-            (cond
-             ((or (not (window-minibuffer-p))
-                  ;; JT@2019-12-23: FIXME: this is still wrong.  What
-                  ;; we need to test here is "some input that actually
-                  ;; leads to flex filtering", not "something after
-                  ;; the minibuffer prompt".  Among other
-                  ;; inconsistencies, the latter is always true for
-                  ;; file searches, meaning the next clauses will be
-                  ;; ignored.
-                  (> (point-max) (minibuffer-prompt-end)))
-              (setq pre-sorted (completion--flex-score pattern pre-sorted))
-              (mapcar #'cdr (sort pre-sorted #'car-less-than-car)))
-             (t pre-sorted))))))
-    `(metadata
-      (display-sort-function
-       . ,(compose-flex-sort-fn
-           (completion-metadata-get metadata 'display-sort-function)))
-      (cycle-sort-function
-       . ,(compose-flex-sort-fn
-           (completion-metadata-get metadata 'cycle-sort-function)))
-      ,@(cdr metadata)))))
+  ;; Use the modified flex sorting function only for non-empty input.
+  ;; In an older version of `completion--flex-adjust-metadata', the
+  ;; check (> (point-max) (minibuffer-prompt-end))) was used instead.
+  (unless (eq string "")
+    (let ((pattern (car (completion--pattern-compiler
+                         string table pred point
+                         #'completion-flex--make-flex-pattern))))
+      (cl-flet
+          ((compose-flex-sort-fn
+            (existing-sort-fn) ; wish `cl-flet' had proper indentation...
+            (lambda (completions)
+              (let* ((sorted (sort (completion--flex-score
+                                    pattern
+                                    (if existing-sort-fn
+                                        (funcall existing-sort-fn completions)
+                                      completions))
+                                   #'car-less-than-car))
+                     (cell sorted))
+                ;; Remove score decorations, reuse the list to avoid allocations.
+                (while cell
+                  (setcar cell (cdar cell))
+                  (pop cell))
+                sorted))))
+        `(metadata
+          (display-sort-function
+           . ,(compose-flex-sort-fn
+               (completion-metadata-get metadata 'display-sort-function)))
+          (cycle-sort-function
+           . ,(compose-flex-sort-fn
+               (completion-metadata-get metadata 'cycle-sort-function)))
+          ,@(cdr metadata))))))
 
 (defun completion-flex--make-flex-pattern (pattern)
   "Convert PCM-style PATTERN into PCM-style flex pattern.

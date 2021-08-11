@@ -310,6 +310,13 @@
            (caar (completion--flex-score '(prefix "R" point "O") '("RaOb")))
            (/ -1.0 4.0))))
 
+(ert-deftest completion-flex-score-test-4 ()
+  ;; For quoted completion tables, score the unquoted completion string.
+  (should (equal
+           (completion--flex-score '(prefix "R")
+                                   (list (propertize "X" 'completion--unquoted "R")))
+           (list (cons -1.0 "R")))))
+
 (ert-deftest completion-filter-completions-test-basic-1 ()
   ;; point at the beginning |foo
   (let* ((completion-styles '(basic))
