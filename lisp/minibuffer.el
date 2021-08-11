@@ -3623,13 +3623,12 @@ each string is propertized with faces `completions-common-part',
        completions))))
 
 (defun completion--flex-score (pattern completions)
-  "Show where and how well PATTERN matches COMPLETIONS.
-PATTERN, a list of symbols and strings as seen
-`completion-pcm--merge-completions', is assumed to match every
-string in COMPLETIONS.  Return a deep copy of COMPLETIONS where
-each string is propertized with `completion-score', a number
-between 0 and 1, and with faces `completions-common-part',
-`completions-first-difference' in the relevant segments."
+  "Compute how well PATTERN matches COMPLETIONS.
+PATTERN, a list of strings is assumed to match every string in
+COMPLETIONS.  Return a copy of COMPLETIONS where each element is
+a pair of a score and the completion string.  The score lies in
+the range between -1 and 0, where -1 corresponds to the full
+match."
   (when completions
     (let* ((re (completion-pcm--pattern->regex pattern 'group))
            (case-fold-search completion-ignore-case)
