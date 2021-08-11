@@ -1086,9 +1086,6 @@ with base size in the last cdr.")
                     (probe (funcall fun string table pred point)))
                (and probe (cons probe style))))
            (completion--styles md)))
-         ;; TODO Also note that the :end position should be returned!
-         ;; "We need to additionally return the info needed for the
-         ;; second part of completion-base-position."
          (style-specific-md (get (cdr result-and-style) 'completion--style-specific-metadata)))
     (when (and style-specific-md metadata)
       (setcdr metadata (cdr (funcall style-specific-md string table pred point metadata))))
@@ -1139,16 +1136,13 @@ POINT is the position of point within STRING.  The METADATA may be
 modified by the completion style.  The return value is a alist with
 the keys:
 
-- base: base size of the completion
+- base: Base size of the completion (`car' of `completion-boundaries')
+- end: End position of the completion (`cdr' of `completion-boundaries')
 - highlight: Highlighting function taking a candidate string and
   returning a new string with applied highlighting.
 - completions: The list of completions.
 
 This function supersedes the function `completion-all-completions'."
-  ;; TODO: We need to additionally return the info needed for the
-  ;; second part of completion-base-position. Since we generalized the API
-  ;; to return a plist, we can also add an :end field.
-
   ;; TODO: The highlight function should take a list of faces. Stefan
   ;; Monnier argues that this facilitates some use cases in Company.
   ;; However the completion style is free to define its own (maybe
@@ -1160,11 +1154,14 @@ This function supersedes the function `completion-all-completions'."
     (if (and result (not (consp (car result))))
         ;; Deferred highlighting has been requested, but the completion
         ;; style returned a non-deferred result. Convert the result to the
-        ;; new format (base highlight-function . completions).
+        ;; new alist format.
         (let* ((last (last result))
                (base (or (cdr last) 0)))
           (setcdr last nil)
-          `((base . ,base) (highlight . identity) (completions . ,result)))
+          `((base . ,base)
+            (end . ,(- (length string) point))
+            (highlight . identity)
+            (completions . ,result)))
       result)))
 
 (defun minibuffer--bitset (modified completions exact)
@@ -2075,14 +2072,15 @@ See also the face `completions-common-part'.")
   "Face for the parts of completions which matched the pattern.
 See also the face `completions-first-difference'.")
 
-(defun completion--deferred-hilit (completions prefix-len base-size)
+(defun completion--deferred-hilit (completions prefix-len bounds)
   (if completion--filter-completions
       (when completions
-        `((base . ,(or base-size 0))
+        `((base . ,(car bounds))
+          (end . ,(cdr bounds))
           (highlight . ,(lambda (completions)
-                          (completion--hilit-commonality completions (- prefix-len (or base-size 0)))))
+                          (completion--hilit-commonality completions (- prefix-len (car bounds)))))
           (completions . ,completions)))
-    (completion-hilit-commonality completions prefix-len base-size)))
+    (completion-hilit-commonality completions prefix-len (car bounds))))
 
 (defun completion--hilit-commonality (completions com-size)
   (mapcar
@@ -3302,7 +3300,7 @@ Like `internal-complete-buffer', but removes BUFFER from the completion list."
   (completion--deferred-hilit
    (all-completions string table pred)
    (length string)
-   (car (completion-boundaries string table pred ""))))
+   (completion-boundaries string table pred "")))
 
 (defun completion-emacs22-try-completion (string table pred point)
   (let ((suffix (substring string point))
@@ -3329,7 +3327,7 @@ Like `internal-complete-buffer', but removes BUFFER from the completion list."
     (completion--deferred-hilit
      (all-completions beforepoint table pred)
      point
-     (car (completion-boundaries beforepoint table pred "")))))
+     (completion-boundaries beforepoint table pred ""))))
 
 ;;; Basic completion.
 
@@ -3388,7 +3386,7 @@ Return the new suffix."
                             'point
                             (substring afterpoint 0 (cdr bounds)))))
          (all (completion-pcm--all-completions prefix pattern table pred)))
-    (completion--deferred-hilit all point (car bounds))))
+    (completion--deferred-hilit all point bounds)))
 
 ;;; Partial-completion-mode style completion.
 
@@ -3580,10 +3578,11 @@ one large \"hole\" and a clumped-together \"oo\" match) higher
 than the latter (which has two \"holes\" and three
 one-letter-long matches).")
 
-(defun completion-pcm--deferred-hilit (base pattern completions)
+(defun completion-pcm--deferred-hilit (bounds pattern completions)
   (when completions
     (if completion--filter-completions
-        `((base . ,base)
+        `((base . ,(car bounds))
+          (end . ,(cdr bounds))
           (highlight . ,(lambda (completions)
                           ;; TODO `completion-pcm--hilit-commonality' sometimes throws an internal error
                           ;; for example when entering "/sudo:://u".
@@ -3591,7 +3590,7 @@ one-letter-long matches).")
                               (completion-pcm--hilit-commonality pattern completions)
                             (t completions))))
           (completions . ,completions))
-      (nconc (completion-pcm--hilit-commonality pattern completions) base))))
+      (nconc (completion-pcm--hilit-commonality pattern completions) (car bounds)))))
 
 (defun completion-pcm--hilit-commonality (pattern completions)
   "Show where and how well PATTERN matches COMPLETIONS.
@@ -3762,7 +3761,7 @@ filter out additional entries (because TABLE might not obey PRED)."
         ;; The prefix has no completions at all, so we should try and fix
         ;; that first.
         (pcase-let* ((substring (substring prefix 0 -1))
-                     (`(,subpat ,suball ,subprefix ,_subsuffix)
+                     (`(,subpat ,suball ,subprefix ,_subsuffix ,_subbounds)
                       (completion-pcm--find-all-completions
                        substring table pred (length substring) filter))
                      (sep (aref prefix (1- (length prefix))))
@@ -3826,12 +3825,12 @@ filter out additional entries (because TABLE might not obey PRED)."
           (setq prefix subprefix)))
       (if (and (null all) firsterror)
           (signal (car firsterror) (cdr firsterror))
-        (list pattern all prefix suffix)))))
+        (list pattern all prefix suffix bounds)))))
 
 (defun completion-pcm-all-completions (string table pred point)
-  (pcase-let ((`(,pattern ,all ,prefix ,_suffix)
+  (pcase-let ((`(,pattern ,all ,_prefix ,_suffix ,bounds)
                (completion-pcm--find-all-completions string table pred point)))
-    (completion-pcm--deferred-hilit (length prefix) pattern all)))
+    (completion-pcm--deferred-hilit bounds pattern all)))
 
 (defun completion--common-suffix (strs)
   "Return the common suffix of the strings STRS."
@@ -4002,7 +4001,7 @@ the same set of elements."
       (cons (concat prefix merged suffix) (+ newpos (length prefix)))))))
 
 (defun completion-pcm-try-completion (string table pred point)
-  (pcase-let ((`(,pattern ,all ,prefix ,suffix)
+  (pcase-let ((`(,pattern ,all ,prefix ,suffix ,_bounds)
                (completion-pcm--find-all-completions
                 string table pred point
                 (if minibuffer-completing-file-name
@@ -4032,7 +4031,7 @@ that is non-nil."
                    (if transform-pattern-fn
                        (funcall transform-pattern-fn pattern)
                      pattern))))
-    (list pattern prefix suffix (car bounds))))
+    (list pattern prefix suffix bounds)))
 
 (defun completion-substring--all-completions
     (string table pred point &optional transform-pattern-fn)
@@ -4046,7 +4045,7 @@ that is non-nil."
           result)))
 
 (defun completion-substring-try-completion (string table pred point)
-  (pcase-let ((`(,all ,pattern ,prefix ,suffix ,_carbounds)
+  (pcase-let ((`(,all ,pattern ,prefix ,suffix ,_bounds)
                (completion-substring--all-completions
                 string table pred point)))
     (if minibuffer-completing-file-name
@@ -4054,10 +4053,10 @@ that is non-nil."
     (completion-pcm--merge-try pattern all prefix suffix)))
 
 (defun completion-substring-all-completions (string table pred point)
-  (pcase-let ((`(,all ,pattern ,prefix ,_suffix ,_carbounds)
+  (pcase-let ((`(,all ,pattern ,_prefix ,_suffix ,bounds)
                (completion-substring--all-completions
                 string table pred point)))
-    (completion-pcm--deferred-hilit (length prefix) pattern all)))
+    (completion-pcm--deferred-hilit bounds pattern all)))
 
 ;;; "flex" completion, also known as flx/fuzzy/scatter completion
 ;; Completes "foo" to "frodo" and "farfromsober"
@@ -4123,7 +4122,7 @@ which is at the core of flex logic.  The extra
 (defun completion-flex-try-completion (string table pred point)
   "Try to flex-complete STRING in TABLE given PRED and POINT."
   (unless (and completion-flex-nospace (string-search " " string))
-    (pcase-let ((`(,all ,pattern ,prefix ,suffix ,_carbounds)
+    (pcase-let ((`(,all ,pattern ,prefix ,suffix ,_bounds)
                  (completion-substring--all-completions
                   string table pred point
                   #'completion-flex--make-flex-pattern)))
@@ -4140,11 +4139,11 @@ which is at the core of flex logic.  The extra
 (defun completion-flex-all-completions (string table pred point)
   "Get flex-completions of STRING in TABLE, given PRED and POINT."
   (unless (and completion-flex-nospace (string-search " " string))
-    (pcase-let ((`(,all ,pattern ,prefix ,_suffix ,_carbounds)
+    (pcase-let ((`(,all ,pattern ,_prefix ,_suffix ,bounds)
                  (completion-substring--all-completions
                   string table pred point
                   #'completion-flex--make-flex-pattern)))
-      (completion-pcm--deferred-hilit (length prefix) pattern all))))
+      (completion-pcm--deferred-hilit bounds pattern all))))
 
 ;; Initials completion
 ;; Complete /ums to /usr/monnier/src or lch to list-command-history.
