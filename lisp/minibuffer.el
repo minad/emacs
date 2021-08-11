@@ -1131,8 +1131,8 @@ POINT is the position of point within STRING.  The METADATA may be
 modified by the completion style.  The return value is a alist with
 the keys:
 
-- base: Base size of the completion (`car' of `completion-boundaries')
-- end: End position of the completion (`cdr' of `completion-boundaries')
+- base: Base position of the completion (from the start of STRING)
+- end: End position of the completion (from the start of STRING)
 - highlight: Highlighting function taking a list of completions and
   returning a new list of new strings with applied highlighting.
 - completions: The list of completions.
@@ -1148,7 +1148,7 @@ This function supersedes the function `completion-all-completions'."
                (base (or (cdr last) 0)))
           (setcdr last nil)
           `((base . ,base)
-            (end . ,(- (length string) point)) ;; TODO FIXME
+            (end . ,(length string))
             (highlight . identity)
             (completions . ,result)))
       result)))
@@ -2061,16 +2061,16 @@ See also the face `completions-common-part'.")
   "Face for the parts of completions which matched the pattern.
 See also the face `completions-first-difference'.")
 
-(defun completion--deferred-hilit (completions prefix-len bounds)
+(defun completion--deferred-hilit (completions prefix-len base end)
   "Return completions in alist format if `completion--filter-completions' is non-nil."
   (if completion--filter-completions
       (when completions
-        `((base . ,(car bounds))
-          (end . ,(cdr bounds))
+        `((base . ,base)
+          (end . ,end)
           (highlight . ,(apply-partially #'completion--hilit-commonality
-                                         (- prefix-len (car bounds))))
+                                         (- prefix-len base)))
           (completions . ,completions)))
-    (completion-hilit-commonality completions prefix-len (car bounds))))
+    (completion-hilit-commonality completions prefix-len base)))
 
 (defun completion--hilit-commonality (com-size completions)
   (mapcar
@@ -3290,7 +3290,8 @@ Like `internal-complete-buffer', but removes BUFFER from the completion list."
   (completion--deferred-hilit
    (all-completions string table pred)
    (length string)
-   (completion-boundaries string table pred "")))
+   (car (completion-boundaries string table pred ""))
+   (length string)))
 
 (defun completion-emacs22-try-completion (string table pred point)
   (let ((suffix (substring string point))
@@ -3317,7 +3318,8 @@ Like `internal-complete-buffer', but removes BUFFER from the completion list."
     (completion--deferred-hilit
      (all-completions beforepoint table pred)
      point
-     (completion-boundaries beforepoint table pred ""))))
+     (car (completion-boundaries beforepoint table pred ""))
+     (length string))))
 
 ;;; Basic completion.
 
@@ -3376,7 +3378,7 @@ Return the new suffix."
                             'point
                             (substring afterpoint 0 (cdr bounds)))))
          (all (completion-pcm--all-completions prefix pattern table pred)))
-    (completion--deferred-hilit all point bounds)))
+    (completion--deferred-hilit all point (car bounds) (+ point (cdr bounds)))))
 
 ;;; Partial-completion-mode style completion.
 
@@ -3568,16 +3570,16 @@ one large \"hole\" and a clumped-together \"oo\" match) higher
 than the latter (which has two \"holes\" and three
 one-letter-long matches).")
 
-(defun completion-pcm--deferred-hilit (bounds pattern completions)
+(defun completion-pcm--deferred-hilit (pattern completions base end)
   "Return completions in alist format if `completion--filter-completions' is non-nil."
   (when completions
     (if completion--filter-completions
-        `((base . ,(car bounds))
-          (end . ,(cdr bounds))
+        `((base . ,base)
+          (end . ,end)
           (highlight . ,(apply-partially #'completion-pcm--hilit-commonality
                                          pattern))
           (completions . ,completions))
-      (nconc (completion-pcm--hilit-commonality pattern completions) (car bounds)))))
+      (nconc (completion-pcm--hilit-commonality pattern completions) base))))
 
 (defun completion-pcm--hilit-commonality (pattern completions)
   "Show where and how well PATTERN matches COMPLETIONS.
@@ -3815,12 +3817,15 @@ filter out additional entries (because TABLE might not obey PRED)."
           (setq prefix subprefix)))
       (if (and (null all) firsterror)
           (signal (car firsterror) (cdr firsterror))
+        ;; TODO FIXME UPDATE BOUNDS
         (list pattern all prefix suffix bounds)))))
 
 (defun completion-pcm-all-completions (string table pred point)
   (pcase-let ((`(,pattern ,all ,_prefix ,_suffix ,bounds)
                (completion-pcm--find-all-completions string table pred point)))
-    (completion-pcm--deferred-hilit bounds pattern all)))
+    ;; TODO FIXME RETURN CORRECT BOUNDS
+    (completion-pcm--deferred-hilit pattern all
+                                    (car bounds) (+ point (cdr bounds)))))
 
 (defun completion--common-suffix (strs)
   "Return the common suffix of the strings STRS."
@@ -4046,7 +4051,8 @@ that is non-nil."
   (pcase-let ((`(,all ,pattern ,_prefix ,_suffix ,bounds)
                (completion-substring--all-completions
                 string table pred point)))
-    (completion-pcm--deferred-hilit bounds pattern all)))
+    (completion-pcm--deferred-hilit pattern all
+                                    (car bounds) (+ point (cdr bounds)))))
 
 ;;; "flex" completion, also known as flx/fuzzy/scatter completion
 ;; Completes "foo" to "frodo" and "farfromsober"
@@ -4133,7 +4139,8 @@ which is at the core of flex logic.  The extra
                  (completion-substring--all-completions
                   string table pred point
                   #'completion-flex--make-flex-pattern)))
-      (completion-pcm--deferred-hilit bounds pattern all))))
+      (completion-pcm--deferred-hilit pattern all
+                                      (car bounds) (+ point (cdr bounds))))))
 
 ;; Initials completion
 ;; Complete /ums to /usr/monnier/src or lch to list-command-history.
@@ -4167,6 +4174,7 @@ which is at the core of flex logic.  The extra
             (concat (substring str 0 (car bounds))
                     (mapconcat 'string (substring str (car bounds)) sep))))))))
 
+;; TODO FIXME BOUNDS
 (defun completion-initials-all-completions (string table pred _point)
   (let ((newstr (completion-initials-expand string table pred)))
     (when newstr
