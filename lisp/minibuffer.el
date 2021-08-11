@@ -4174,10 +4174,11 @@ which is at the core of flex logic.  The extra
                     (mapconcat 'string (substring str (car bounds)) sep))))))))
 
 (defun completion-initials-all-completions (string table pred _point)
-  (pcase-let* ((newstr (completion-initials-expand string table pred))
-               (`(,pattern ,all ,prefix ,_suffix ,_bounds)
-                (completion-pcm--find-all-completions newstr table pred (length newstr))))
-    (completion-pcm--deferred-hilit pattern all (length prefix) (length string))))
+  (let ((newstr (completion-initials-expand string table pred)))
+    (when newstr
+      (pcase-let ((`(,pattern ,all ,prefix ,_suffix ,_bounds)
+                   (completion-pcm--find-all-completions newstr table pred (length newstr))))
+        (completion-pcm--deferred-hilit pattern all (length prefix) (length string))))))
 
 (defun completion-initials-try-completion (string table pred _point)
   (let ((newstr (completion-initials-expand string table pred)))
