@@ -3817,15 +3817,14 @@ filter out additional entries (because TABLE might not obey PRED)."
           (setq prefix subprefix)))
       (if (and (null all) firsterror)
           (signal (car firsterror) (cdr firsterror))
-        ;; TODO FIXME UPDATE BOUNDS
         (list pattern all prefix suffix bounds)))))
 
 (defun completion-pcm-all-completions (string table pred point)
-  (pcase-let ((`(,pattern ,all ,_prefix ,_suffix ,bounds)
+  (pcase-let ((`(,pattern ,all ,prefix ,suffix ,_bounds)
                (completion-pcm--find-all-completions string table pred point)))
-    ;; TODO FIXME RETURN CORRECT BOUNDS
     (completion-pcm--deferred-hilit pattern all
-                                    (car bounds) (+ point (cdr bounds)))))
+                                    (length prefix)
+                                    (- (length string) (length suffix)))))
 
 (defun completion--common-suffix (strs)
   "Return the common suffix of the strings STRS."
@@ -4048,11 +4047,12 @@ that is non-nil."
     (completion-pcm--merge-try pattern all prefix suffix)))
 
 (defun completion-substring-all-completions (string table pred point)
-  (pcase-let ((`(,all ,pattern ,_prefix ,_suffix ,bounds)
+  (pcase-let ((`(,all ,pattern ,prefix ,suffix ,_bounds)
                (completion-substring--all-completions
                 string table pred point)))
     (completion-pcm--deferred-hilit pattern all
-                                    (car bounds) (+ point (cdr bounds)))))
+                                    (length prefix)
+                                    (- (length string) (length suffix)))))
 
 ;;; "flex" completion, also known as flx/fuzzy/scatter completion
 ;; Completes "foo" to "frodo" and "farfromsober"
@@ -4135,12 +4135,13 @@ which is at the core of flex logic.  The extra
 (defun completion-flex-all-completions (string table pred point)
   "Get flex-completions of STRING in TABLE, given PRED and POINT."
   (unless (and completion-flex-nospace (string-search " " string))
-    (pcase-let ((`(,all ,pattern ,_prefix ,_suffix ,bounds)
+    (pcase-let ((`(,all ,pattern ,prefix ,suffix ,_bounds)
                  (completion-substring--all-completions
                   string table pred point
                   #'completion-flex--make-flex-pattern)))
       (completion-pcm--deferred-hilit pattern all
-                                      (car bounds) (+ point (cdr bounds))))))
+                                    (length prefix)
+                                    (- (length string) (length suffix))))))
 
 ;; Initials completion
 ;; Complete /ums to /usr/monnier/src or lch to list-command-history.
@@ -4174,11 +4175,11 @@ which is at the core of flex logic.  The extra
             (concat (substring str 0 (car bounds))
                     (mapconcat 'string (substring str (car bounds)) sep))))))))
 
-;; TODO FIXME BOUNDS
 (defun completion-initials-all-completions (string table pred _point)
-  (let ((newstr (completion-initials-expand string table pred)))
-    (when newstr
-      (completion-pcm-all-completions newstr table pred (length newstr)))))
+  (pcase-let* ((newstr (completion-initials-expand string table pred))
+               (`(,pattern ,all ,prefix ,_suffix ,_bounds)
+                (completion-pcm--find-all-completions newstr table pred (length newstr))))
+    (completion-pcm--deferred-hilit pattern all (length prefix) (length string))))
 
 (defun completion-initials-try-completion (string table pred _point)
   (let ((newstr (completion-initials-expand string table pred)))

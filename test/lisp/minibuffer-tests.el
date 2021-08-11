@@ -376,7 +376,7 @@
          (result (completion-filter-completions
                   "abc" '("a-b-c" "ax-by-cz" "xax-by-cz") nil 1 nil)))
     (should (equal (alist-get 'base result) 0))
-    (should (equal (alist-get 'end result) 3)) ;; TODO FIXME
+    (should (equal (alist-get 'end result) 3))
     (should (equal (alist-get 'completions result)
                    '("a-b-c" "ax-by-cz")))
     (should (not (memq (alist-get 'highlight result) '(nil identity))))))
