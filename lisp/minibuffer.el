@@ -1076,7 +1076,7 @@ with base size in the last cdr.")
               ;; quoting is used.  Not doing deferred highlighting is
               ;; not too severe in this case, since
               ;; `completion--twq-all' is already an expensive
-              ;; function, which allocates all candidates.  In
+              ;; function, which allocates all completion strings.  In
               ;; contrast to plain completion tables, the savings of
               ;; deferred highlighting would be minimal in the case of
               ;; quoted completion tables.
