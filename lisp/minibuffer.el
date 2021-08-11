@@ -1072,7 +1072,14 @@ with base size in the last cdr.")
                  ;; the original table, in that case!
                  (functionp table))
             (let ((new (funcall table string point 'completion--unquote)))
-              ;; FIXME Do not attempt deferred highlighting if quoting is used
+              ;; FIXME For now do not attempt deferred highlighting if
+              ;; quoting is used.  Not doing deferred highlighting is
+              ;; not too severe in this case, since
+              ;; `completion--twq-all' is already an expensive
+              ;; function, which allocates all candidates.  In
+              ;; contrast to plain completion tables, the savings of
+              ;; deferred highlighting would be minimal in the case of
+              ;; quoted completion tables.
               (setq completion--filter-completions nil)
               (setq string (pop new))
               (setq table (pop new))
