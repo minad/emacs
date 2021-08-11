@@ -1128,19 +1128,21 @@ with base size in the last cdr.")
 (defun completion-try-completion (string table pred point &optional metadata)
   "Try to complete STRING using completion table TABLE.
 Only the elements of table that satisfy predicate PRED are considered.
-POINT is the position of point within STRING.
-The return value can be either nil to indicate that there is no completion,
-t to indicate that STRING is the only possible completion,
-or a pair (NEWSTRING . NEWPOINT) of the completed result string together with
-a new position for point."
+POINT is the position of point within STRING.  The return value can be
+either nil to indicate that there is no completion, t to indicate that
+STRING is the only possible completion, or a pair (NEWSTRING . NEWPOINT)
+of the completed result string together with a new position for point.
+The METADATA may be modified by the completion style."
   (completion--nth-completion 1 string table pred point metadata))
 
 (defun completion-all-completions (string table pred point &optional metadata)
   "List the possible completions of STRING in completion table TABLE.
 Only the elements of table that satisfy predicate PRED are considered.
-POINT is the position of point within STRING.
-The return value is a list of completions and may contain the base-size
-in the last `cdr'."
+POINT is the position of point within STRING.  The return value is a
+list of completions and may contain the base-size in the last `cdr'.
+The METADATA may be modified by the completion style.  This function
+has been superseded by `completion-filter-completions', which returns
+richer information and supports deferred candidate highlighting."
   (let ((completion--filter-completions nil)
         (result (completion--nth-completion 2 string table pred point metadata)))
     (if (and result (consp (car result)))
@@ -1155,11 +1157,18 @@ in the last `cdr'."
       result)))
 
 (defun completion-filter-completions (string table pred point metadata)
-  "List the possible completions of STRING in completion table TABLE.
+  "Filter the possible completions of STRING in completion table TABLE.
 Only the elements of table that satisfy predicate PRED are considered.
-POINT is the position of point within STRING.
-The return value is a list of completions and may contain the base-size
-in the last `cdr'."
+POINT is the position of point within STRING.  The METADATA may be
+modified by the completion style.  The return value is a alist with
+the keys:
+
+- base: base size of the completion
+- highlight: Highlighting function taking a candidate string and
+  returning a new string with applied highlighting.
+- completions: The list of completions.
+
+This function supersedes the function `completion-all-completions'."
   ;; TODO: We need to additionally return the info needed for the
   ;; second part of completion-base-position. Since we generalized the API
   ;; to return a plist, we can also add an :end field.
