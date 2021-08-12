@@ -1039,16 +1039,16 @@ This overrides the defaults specified in `completion-category-defaults'."
         (delete-dups (append (cdr over) (copy-sequence completion-styles)))
        completion-styles)))
 
-(defvar completion--filter-completions nil
+(defvar completion--return-alist-flag nil
   "Enable the new completions return value format.
 If this variable is non-nil the `all-completions' function of a
 completion style should return the results in the new alist format of
 `completion-filter-completions'.  This variable is purely needed to
 for backward compatibility of the existing builtin completion style
-functions.  New completion style functions may always return their
-results in the new alist format, since `completion-all-completions'
-transparently converts back to the old improper list of completions
-with base size in the last cdr.")
+functions as of Emacs 28.  New completion style functions should
+always return their results in the new alist format, since
+`completion-all-completions' transparently converts back to the old
+improper list of completions with base size in the last cdr.")
 
 (defun completion--nth-completion (n string table pred point metadata)
   "Call the Nth method of completion styles."
@@ -1084,7 +1084,7 @@ with base size in the last cdr.")
               ;; contrast to plain completion tables, the savings of
               ;; deferred highlighting would be minimal in the case of
               ;; quoted completion tables.
-              (setq completion--filter-completions nil)
+              (setq completion--return-alist-flag nil)
               (setq string (pop new))
               (setq table (pop new))
               (setq point (pop new))
@@ -1093,18 +1093,35 @@ with base size in the last cdr.")
          (result-and-style
           (completion--some
            (lambda (style)
-             (let ((probe (funcall (nth n (assq style
-                                                completion-styles-alist))
-                                   string table pred point)))
+             (let* ((fun (nth n (assq style completion-styles-alist)))
+                    ;; Transparently upgrade the return value for
+                    ;; existing built-in styles as of Emacs 28.  No
+                    ;; new styles should be added here. New completion
+                    ;; styles should directly return the new
+                    ;; completion format.el
+                    (completion--return-alist-flag
+                     (and completion--return-alist-flag
+                          (memq style '(emacs21 emacs22 basic substring
+                                        partial-completion initials flex))))
+                    (probe (funcall fun string table pred point)))
                (and probe (cons probe style))))
            (completion--styles md)))
-         (style-md (get (cdr result-and-style) 'completion--style-metadata)))
+         (style-md (get (cdr result-and-style) 'completion--style-metadata))
+         (result (car result-and-style)))
     (when (and style-md metadata)
       (setcdr metadata (cdr (funcall style-md
                                      string table pred point metadata))))
+    (when (and (not completion--return-alist-flag) (= n 2) (consp (car result)))
+      ;; Give the completion styles some freedom!  If they are
+      ;; targeting Emacs 28 upwards only, they may return a result
+      ;; with deferred highlighting.  We convert back to the old
+      ;; format here by applying the highlighting eagerly.
+      (setq result (nconc (funcall (cdr (assq 'highlight result))
+                                   (cdr (assq 'completions result)))
+                          (cdr (assq 'base result)))))
     (if requote
-        (funcall requote (car result-and-style) n)
-      (car result-and-style))))
+        (funcall requote result n)
+      result)))
 
 (defun completion-try-completion (string table pred point &optional metadata)
   "Try to complete STRING using completion table TABLE.
@@ -1124,19 +1141,8 @@ list of completions and may contain the base-size in the last `cdr'.
 The METADATA may be modified by the completion style.  This function
 has been superseded by `completion-filter-completions', which returns
 richer information and supports deferred candidate highlighting."
-  (let ((completion--filter-completions nil)
-        (result (completion--nth-completion 2 string table
-                                            pred point metadata)))
-    (if (and result (consp (car result)))
-        ;; Give the completion styles some freedom!
-        ;; If they are targeting Emacs 28 upwards only, they
-        ;; may always return a result with deferred
-        ;; highlighting.  We convert back to the old format
-        ;; here by applying the highlighting eagerly.
-        (nconc (funcall (cdr (assq 'highlight result))
-                        (cdr (assq 'completions result)))
-               (cdr (assq 'base result)))
-      result)))
+  (let ((completion--return-alist-flag nil))
+    (completion--nth-completion 2 string table pred point metadata)))
 
 (defun completion-filter-completions (string table pred point metadata)
   "Filter the possible completions of STRING in completion table TABLE.
@@ -1152,7 +1158,7 @@ the keys:
 - completions: The list of completions.
 
 This function supersedes the function `completion-all-completions'."
-  (let* ((completion--filter-completions t)
+  (let* ((completion--return-alist-flag t)
          (result (completion--nth-completion 2 string table
                                              pred point metadata)))
     (if (and result (not (consp (car result))))
@@ -2120,8 +2126,8 @@ and with BASE-SIZE appended as the last element."
 
 (defun completion--deferred-hilit (completions prefix-len base end)
   "Return completions in old format or new alist format.
-If `completion--filter-completions' is non-nil use the new format."
-  (if completion--filter-completions
+If `completion--return-alist-flag' is non-nil use the new format."
+  (if completion--return-alist-flag
       (when completions
         `((base . ,base)
           (end . ,end)
@@ -3586,9 +3592,9 @@ one-letter-long matches).")
 
 (defun completion-pcm--deferred-hilit (pattern completions base end)
   "Return completions in old format or new alist format.
-If `completion--filter-completions' is non-nil use the new format."
+If `completion--return-alist-flag' is non-nil use the new format."
   (when completions
-    (if completion--filter-completions
+    (if completion--return-alist-flag
         `((base . ,base)
           (end . ,end)
           (highlight . ,(apply-partially
