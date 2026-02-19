@@ -24,6 +24,10 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 
 #include "character.h"
 
+#if defined HAVE_MODULES && (defined HAVE_X_WINDOWS || defined USE_CAIRO)
+#  define HAVE_CANVAS 1
+#endif
+
 #ifdef HAVE_X_WINDOWS
 
 #include <X11/Xlib.h>
@@ -3353,6 +3357,9 @@ struct image
   /* Image id of this image.  */
   ptrdiff_t id;
 
+  /* Refresh counter reflecting the current version of the image.  */
+  int refresh;
+
   /* Hash collision chain.  */
   struct image *next, *prev;
 };
@@ -3627,6 +3634,7 @@ extern void get_font_ascent_descent (struct font *, int *, int *);
 
 #ifdef HAVE_WINDOW_SYSTEM
 
+extern void redraw_canvas_glyphs (Lisp_Object);
 extern void gui_get_glyph_overhangs (struct glyph *, struct frame *,
                                      int *, int *);
 extern struct font *font_for_underline_metrics (struct glyph_string *);
@@ -3715,6 +3723,12 @@ extern bool buffer_flipping_blocked_p (void);
 extern void update_redisplay_ticks (int, struct window *);
 
 /* Defined in image.c */
+
+#ifdef HAVE_CANVAS
+extern uint32_t* canvas_pixel (Lisp_Object);
+extern void canvas_refresh (Lisp_Object);
+extern void canvas_prepare (struct frame *f, struct image *img);
+#endif
 
 #ifdef HAVE_WINDOW_SYSTEM
 

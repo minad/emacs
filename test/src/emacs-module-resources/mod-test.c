@@ -752,6 +752,28 @@ Fmod_test_make_string (emacs_env *env, ptrdiff_t nargs,
   return ret;
 }
 
+static emacs_value
+Fmod_test_canvas (emacs_env *env, ptrdiff_t nargs,
+		  emacs_value *args, void *data)
+{
+  assert (nargs == 2);
+
+  if (env->is_not_nil (env, args[1]))
+    {
+      uint32_t* buf = env->canvas_pixel (env, args[0]);
+      if (!buf)
+        return env->intern (env, "nil");
+      assert (buf);
+      memset (buf, 42, 4 * 800 * 600);
+      env->canvas_refresh (env, args[0]);
+    }
+  else
+    {
+      assert (!env->canvas_pixel (env, args[0]));
+    }
+  return env->intern (env, "t");
+}
+
 /* Lisp utilities for easier readability (simple wrappers).  */
 
 /* Provide FEATURE to Emacs.  */
@@ -853,6 +875,7 @@ emacs_module_init (struct emacs_runtime *ert)
   DEFUN ("mod-test-funcall", Fmod_test_funcall, 1, emacs_variadic_function,
          NULL, NULL);
   DEFUN ("mod-test-make-string", Fmod_test_make_string, 2, 2, NULL, NULL);
+  DEFUN ("mod-test-canvas", Fmod_test_canvas, 2, 2, NULL, NULL);
 
 #undef DEFUN
 

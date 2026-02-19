@@ -291,6 +291,8 @@ a fixed set of types.  */)
 	  return Qtreesit_compiled_query;
         case PVEC_SQLITE:
           return Qsqlite;
+        case PVEC_CANVAS:
+          return Qcanvas;
         case PVEC_SUB_CHAR_TABLE:
           return Qsub_char_table;
         /* "Impossible" cases.  */

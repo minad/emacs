@@ -2020,6 +2020,35 @@ done, close the file descriptor using @code{close}.  @ref{Low-Level
 I/O,,,libc}.
 @end deftypefun
 
+@node Module Misc
+@subsection Using Canvas API With Modules
+
+Emacs supports creating pixel buffers called ``canvas` using dynamic modules.
+@xref{Canvas Images} explains what they are, here we see how to use them from
+dynamic modules.
+
+@anchor{canvas_pixel}
+@deftypefn Function uint32_t *canvas_pixel (emacs_env *@var{env}, emacs_value @var{canvas})
+The function gives access to the pixel buffer.  The pixel buffer
+(of ARGB32 format) is in row-major order with a size @var{width} * @var{height}.
+The pointer will be valid as long as the object @var{canvas} is alive.
+@end deftypefn
+
+@deftypefn Function void canvas_refresh (emacs_env *@var{env}, emacs_value @var{canvas})
+Request that the @var{canvas} image is redrawn.
+@end deftypefn
+
+@example
+uint32_t *pixel = env->canvas_pixel (env, canvas);
+/* Write to the pixel buffer */
+env->canvas_refresh (env, canvas);
+@end example
+
+Thus, one can simply define a module function that takes as an argument a
+canvas object, following the specification as laid down in @xref{Canvas Images}
+and then use the above functions to manipulate the pixel buffer of the canvas
+and update it.
+
 @node Module Nonlocal
 @subsection Nonlocal Exits in Modules
 @cindex nonlocal exits, in modules
