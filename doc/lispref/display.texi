@@ -6024,6 +6024,7 @@ displayed (@pxref{Display Feature Testing}).
 * Defining Images::     Convenient ways to define an image for later use.
 * Showing Images::      Convenient ways to display an image once it is defined.
 * Multi-Frame Images::  Some images contain more than one frame.
+* Canvas Images::       Images backed by a writable ARGB32 memory buffer.
 * Image Cache::         Internal mechanisms of image display.
 @end menu
 
@@ -7475,6 +7476,48 @@ This function returns the timer responsible for animating @var{image},
 if there is one.
 @end defun
 
+@node Canvas Images
+@subsection Canvas Images
+@cindex canvas image
+
+Canvas images have an associated writeable ARGB32 pixel buffer.  They
+can be used by dynamic modules to efficiently display and update images,
+for example by document viewers, visualization tools, dynamically
+computed animations or games.  An image specifier with @code{:type
+canvas} creates a canvas, for instance as follows:
+
+@lisp
+(defvar my-canvas
+  '(image :type canvas
+          :canvas-id my-identifier
+          :canvas-width 800
+          :canvas-height 600))
+@end lisp
+
+The image specification must specify a unique identifier symbol
+@code{:canvas-id}.  The identifier must be different for two canvases
+with different size.  The positive integer width and positive integer
+height of the canvas @code{:canvas-width} and @code{:canvas-height} are
+mandatory.
+
+Other image properties like @code{:scale}, @code{:margin},
+@code{:relief}, @code{:scale}, @code{:transform-smoothing} and
+@code{:map} are supported.
+
+In order to display the canvas, specify it as display property of a
+string or overlay:
+
+@lisp
+(insert (propertize "#" 'display my-canvas))
+(overlay-put some-overlay 'display my-canvas)
+@end lisp
+
+The module function @code{canvas_pixel} gives access to the writable
+pixel buffer in ARGB32 format.  The buffer has size @var{width} *
+@var{height} and is organized in row-major order.  After drawing to the
+pixel buffer, redraw the canvas with a call to @code{canvas_refresh}.
+@xref{Writing Dynamic Modules} for details regarding dynamic
+modules and how to use this functionality in them.
 
 @node Image Cache
 @subsection Image Cache

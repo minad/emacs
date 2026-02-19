@@ -588,4 +588,28 @@ See Bug#36226."
         (should (string-equal first second))
         (should-not (eq first second))))))
 
+;;; Canvas tests
+
+(ert-deftest mod-test-canvas/valid ()
+  (skip-unless (image-type-available-p 'canvas))
+  (skip-unless (display-graphic-p))
+  (should (mod-test-canvas '(image :type canvas
+                                   :canvas-id mod-test
+                                   :canvas-width 800
+                                   :canvas-height 600)
+                           t)))
+
+(ert-deftest mod-test-canvas/invalid ()
+  (skip-unless (image-type-available-p 'canvas))
+  (skip-unless (display-graphic-p))
+  (should-error (mod-test-canvas '(image :type canvas
+                                         :canvas-width 800
+                                         :canvas-height 600)
+                                 t))
+  (should-error (mod-test-canvas '(image :type canvas
+                                         :canvas-id mod-test)
+                                 t))
+  (should-error (mod-test-canvas nil nil))
+  (should-error (mod-test-canvas '(image :type xbm :data "") nil)))
+
 ;;; emacs-module-tests.el ends here
