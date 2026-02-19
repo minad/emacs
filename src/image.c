@@ -1877,6 +1877,11 @@ prepare_image_for_display (struct frame *f, struct image *img)
       unblock_input ();
     }
 #endif
+
+  /* Copy canvas pixel into pixmap if refresh counter has been updated.  */
+  Lisp_Object canvas = img->lisp_data;
+  if (CANVASP (canvas) && XCANVAS (canvas)->refresh != img->refresh)
+    canvas_prepare (f, img);
 }
 
 
@@ -3364,6 +3369,17 @@ image_set_transform (struct frame *f, struct image *img)
 			      matrix[1][1], matrix[2][0], matrix[2][1]};
   cairo_pattern_t *pattern = cairo_pattern_create_rgb (0, 0, 0);
   cairo_pattern_set_matrix (pattern, &cr_matrix);
+
+#ifdef HAVE_CANVAS
+  /* Performance degrades with CAIRO_FILTER_BEST when using canvas, and possibly
+     we get HW acceleration from CAIRO_FILTER_GOOD */
+  if (EQ (image_spec_value (img->spec, QCtype, NULL), Qcanvas))
+    {
+      cairo_pattern_set_filter (pattern, smoothing
+				? CAIRO_FILTER_GOOD : CAIRO_FILTER_NEAREST);
+    }
+#endif
+
   cairo_pattern_set_filter (pattern, smoothing
                             ? CAIRO_FILTER_BEST : CAIRO_FILTER_NEAREST);
   /* Dummy solid color pattern just to record pattern matrix.  */
@@ -5411,7 +5427,223 @@ xbm_load (struct frame *f, struct image *img)
   return success_p;
 }
 
+#ifdef HAVE_CANVAS
+
+/***********************************************************************
+			      Canvas
+ ***********************************************************************/
 
+/* Indices of image specification fields in canvas_format, below.  */
+
+enum canvas_keyword_index
+{
+  CANVAS_TYPE,
+  CANVAS_ID,
+  CANVAS_WIDTH,
+  CANVAS_HEIGHT,
+  CANVAS_ASCENT,
+  CANVAS_MARGIN,
+  CANVAS_RELIEF,
+  CANVAS_LAST
+};
+
+/* Vector of image_keyword structures describing the format
+   of valid user-defined image specifications.  */
+
+static const struct image_keyword canvas_format[CANVAS_LAST] =
+{
+  {":type",		IMAGE_SYMBOL_VALUE,			1},
+  {":canvas-id",	IMAGE_SYMBOL_VALUE,			1},
+  {":canvas-width",	IMAGE_POSITIVE_INTEGER_VALUE,		1},
+  {":canvas-height",	IMAGE_POSITIVE_INTEGER_VALUE,		1},
+  {":ascent",		IMAGE_ASCENT_VALUE,			0},
+  {":margin",		IMAGE_NON_NEGATIVE_INTEGER_VALUE_OR_PAIR, 0},
+  {":relief",		IMAGE_INTEGER_VALUE,			0},
+};
+
+/* Weak hash map associating the canvas id with the canvas object.  */
+
+static Lisp_Object canvas_map;
+
+/* Return true if OBJECT is a valid canvas image specification.  */
+
+static bool
+canvas_image_p (Lisp_Object object)
+{
+  struct image_keyword fmt[CANVAS_LAST];
+  memcpy (fmt, canvas_format, sizeof fmt);
+  return parse_image_spec (object, fmt, CANVAS_LAST, Qcanvas);
+}
+
+/* Get canvas object for IMAGE specification. Return nil on error.  */
+
+static Lisp_Object canvas_get (Lisp_Object image)
+{
+  struct image_keyword fmt[CANVAS_LAST];
+  memcpy (fmt, canvas_format, sizeof fmt);
+  if (!parse_image_spec (image, fmt, CANVAS_LAST, Qcanvas))
+    {
+      image_error ("Invalid canvas image specification");
+      return Qnil;
+    }
+
+  Lisp_Object id = fmt[CANVAS_ID].value,
+              canvas = Fgethash (id, canvas_map, Qnil);
+  int width = XFIXNAT (fmt[CANVAS_WIDTH].value),
+      height = XFIXNAT (fmt[CANVAS_HEIGHT].value);
+
+  if (!NILP (canvas))
+    {
+      struct Lisp_Canvas *c = XCANVAS (canvas);
+      if (c->width != width || c->height != height)
+        {
+	  image_error ("Inconsistent canvas dimension for :canvas-id %s",
+		       SSDATA (SYMBOL_NAME (id)));
+	  return Qnil;
+        }
+    }
+
+  if (NILP (canvas))
+    {
+      struct Lisp_Canvas *c =
+	  ALLOCATE_PSEUDOVECTOR (struct Lisp_Canvas, id, PVEC_CANVAS);
+      /* Use the string here since the symbol, since the symbol is used
+	 as key in the weak hash table `canvas_map'. */
+      c->id = SYMBOL_NAME (id);
+      c->refresh = 0;
+      c->width = width;
+      c->height = height;
+      c->pixel = xzalloc (4 * width * height);
+      canvas = make_lisp_ptr (c, Lisp_Vectorlike);
+      Fputhash (id, canvas, canvas_map);
+    }
+
+  return canvas;
+}
+
+/* Create canvas IMG in frame F.  Value is true if successful.  */
+
+static bool
+canvas_load (struct frame *f, struct image *img)
+{
+  Lisp_Object canvas = canvas_get (img->spec);
+
+  if (NILP (canvas))
+    return 0;
+
+  struct Lisp_Canvas *c = XCANVAS (canvas);
+  img->lisp_data = canvas;
+  img->width = c->width;
+  img->height = c->height;
+  img->background_valid = 1;
+  img->background_transparent_valid = 1;
+
+  Emacs_Pix_Container ximg;
+  if (!image_create_x_image_and_pixmap (f, img, c->width, c->height, 0, &ximg, 0))
+    return 0;
+
+  image_put_x_image (f, img, ximg, 0);
+
+  return 1;
+}
+
+/* Prepare image IMG from canvas for display.  */
+
+void
+canvas_prepare (struct frame *f, struct image *img)
+{
+  block_input ();
+
+  struct Lisp_Canvas *canvas = XCANVAS (img->lisp_data);
+  img->refresh = canvas->refresh;
+  uint32_t* src = canvas->pixel;
+  int width = canvas->width, height = canvas->height;
+
+  /* Alpha channel is preserved here. Potentially preserve it when
+     drawing the image in x_draw_image_glyph_string?  */
+#ifdef USE_CAIRO
+  cairo_surface_t* surface;
+  if (img->cr_data
+      && cairo_pattern_get_type (img->cr_data) == CAIRO_PATTERN_TYPE_SURFACE
+      && !cairo_pattern_get_surface (img->cr_data, &surface))
+    {
+      cairo_surface_flush (surface);
+      int stride = cairo_image_surface_get_stride (surface);
+      unsigned char *dst = cairo_image_surface_get_data (surface);
+      if (stride == 4 * width) /* Fast path */
+	{
+	  memcpy (dst, src, stride * height);
+	}
+      else
+	{
+	  for (int y = 0; y < height; ++y)
+	    memcpy (dst + (y * stride), src + (y * width), 4 * width);
+	}
+      cairo_surface_mark_dirty (surface);
+    }
+#elif defined HAVE_X_WINDOWS
+  int depth = FRAME_DISPLAY_INFO (f)->n_planes;
+  XImage *ximg = XCreateImage (FRAME_X_DISPLAY (f), FRAME_X_VISUAL (f),
+			       depth, ZPixmap, 0, NULL, width, height,
+			       depth > 16 ? 32 : depth > 8 ? 16 : 8, 0);
+  if (ximg)
+    {
+      ximg->data = xmalloc (ximg->bytes_per_line * height);
+      for (int y = 0; y < height; ++y)
+	{
+	  for (int x = 0; x < width; ++x)
+	    {
+	      uint32_t c = src[y * width + x],
+		       r = (c >> 16) & 255,
+		       g = (c >>  8) & 255,
+		       b = c         & 255;
+	      PUT_PIXEL (ximg, x, y, lookup_rgb_color (f, r << 8, g << 8, b << 8));
+	    }
+	}
+      gui_put_x_image (f, ximg, img->pixmap, width, height);
+      x_destroy_x_image (ximg);
+    }
+#else
+# error Canvas not supported by the platform
+#endif
+
+  unblock_input ();
+}
+
+/* Access canvas buffer. */
+
+uint32_t* canvas_pixel (Lisp_Object image)
+{
+  Lisp_Object canvas = canvas_get (image);
+
+  if (NILP (canvas))
+    error ("Not a canvas");
+
+  return XCANVAS (canvas)->pixel;
+}
+
+/* Refresh canvas IMAGE.  */
+
+void canvas_refresh (Lisp_Object image)
+{
+  Lisp_Object canvas = canvas_get (image);
+
+  if (NILP (canvas))
+    error ("Not a canvas");
+
+  /* Increment refresh counter; wrap around
+     to positive on overflow.  */
+  int *p = &XCANVAS (canvas)->refresh;
+  if (ckd_add (p, *p, 1))
+    *p = 1;
+
+  /* Redraw all glyphs.  */
+  block_input ();
+  redraw_canvas_glyphs (canvas);
+  unblock_input ();
+}
+
+#endif
 
 /***********************************************************************
 			      XPM images
@@ -12972,6 +13204,9 @@ static struct image_type const image_types[] =
  { SYMBOL_INDEX (Qwebp), webp_image_p, webp_load, image_clear_image,
    IMAGE_TYPE_INIT (init_webp_functions) },
 #endif
+#if defined HAVE_CANVAS
+  { SYMBOL_INDEX (Qcanvas), canvas_image_p, canvas_load, image_clear_image },
+#endif
  { SYMBOL_INDEX (Qxbm), xbm_image_p, xbm_load, image_clear_image },
  { SYMBOL_INDEX (Qpbm), pbm_image_p, pbm_load, image_clear_image },
 };
@@ -13171,6 +13406,13 @@ non-numeric, there is no explicit limit on the size of images.  */);
   if (image_can_use_native_api (Qwebp))
     add_image_type (Qwebp);
 #endif /* NS_IMPL_GNUSTEP && !HAVE_WEBP */
+#endif
+
+#if defined (HAVE_CANVAS)
+  DEFSYM (Qcanvas, "canvas");
+  add_image_type (Qcanvas);
+  canvas_map = make_hash_table (&hashtest_eq, DEFAULT_HASH_SIZE, Weak_Key_Or_Value);
+  staticpro (&canvas_map);
 #endif
 
 #if defined (HAVE_IMAGEMAGICK)

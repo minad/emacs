@@ -1009,6 +1009,7 @@ enum pvec_type
   PVEC_TS_NODE,
   PVEC_TS_COMPILED_QUERY,
   PVEC_SQLITE,
+  PVEC_CANVAS,
 
   /* These should be last, for internal_equal and sxhash_obj.  */
   PVEC_CLOSURE,
@@ -2911,6 +2912,19 @@ xmint_pointer (Lisp_Object a)
   return XUNTAG (a, Lisp_Vectorlike, struct Lisp_Misc_Ptr)->pointer;
 }
 
+struct Lisp_Canvas
+{
+  union vectorlike_header header;
+  /* Canvas ID as string.  */
+  Lisp_Object id;
+  /* Incremented if the canvas should be redrawn.  */
+  int refresh;
+  /* Dimension of the canvas.  */
+  int width, height;
+  /* Pinned pixel memory buffer in ARGB32 format.  */
+  uint32_t *pixel;
+} GCALIGNED_STRUCT;
+
 struct Lisp_Sqlite
 {
   union vectorlike_header header;
@@ -3022,6 +3036,19 @@ XSQLITE (Lisp_Object a)
 {
   eassert (SQLITEP (a));
   return XUNTAG (a, Lisp_Vectorlike, struct Lisp_Sqlite);
+}
+
+INLINE bool
+CANVASP (Lisp_Object x)
+{
+  return PSEUDOVECTORP (x, PVEC_CANVAS);
+}
+
+INLINE struct Lisp_Canvas *
+XCANVAS (Lisp_Object a)
+{
+  eassert (CANVASP (a));
+  return XUNTAG (a, Lisp_Vectorlike, struct Lisp_Canvas);
 }
 
 INLINE bool
