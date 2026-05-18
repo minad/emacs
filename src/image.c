@@ -5438,6 +5438,8 @@ xbm_load (struct frame *f, struct image *img)
 enum canvas_keyword_index
 {
   CANVAS_TYPE,
+  CANVAS_FILE,
+  CANVAS_DATA,
   CANVAS_ID,
   CANVAS_WIDTH,
   CANVAS_HEIGHT,
@@ -5453,6 +5455,8 @@ enum canvas_keyword_index
 static const struct image_keyword canvas_format[CANVAS_LAST] =
 {
   {":type",		IMAGE_SYMBOL_VALUE,			1},
+  {":file",		IMAGE_STRING_VALUE,			0},
+  {":data",		IMAGE_DONT_CHECK_VALUE_TYPE,			0},
   {":canvas-id",	IMAGE_SYMBOL_VALUE,			1},
   {":canvas-width",	IMAGE_POSITIVE_INTEGER_VALUE,		1},
   {":canvas-height",	IMAGE_POSITIVE_INTEGER_VALUE,		1},
@@ -5473,6 +5477,80 @@ canvas_image_p (Lisp_Object object)
   struct image_keyword fmt[CANVAS_LAST];
   memcpy (fmt, canvas_format, sizeof fmt);
   return parse_image_spec (object, fmt, CANVAS_LAST, Qcanvas);
+}
+
+
+/* Copy pixel data into canvas C from a parsed image keyword array FMT.
+   WIDTH and HEIGHT give the expected canvas dimensions.
+
+   :data must be an unibyte string of exactly 4*WIDTH*HEIGHT bytes in
+   ARGB32 format. :file names a binary file of the same size.
+   If :data is provided that is preferred, else we load the :file */
+
+static void
+canvas_apply_data (struct Lisp_Canvas *c, struct image_keyword *fmt,
+		   int width, int height)
+{
+  ptrdiff_t expected = (ptrdiff_t) 4 * width * height;
+
+
+  Lisp_Object data = fmt[CANVAS_DATA].value;
+  Lisp_Object file = fmt[CANVAS_FILE].value;
+
+  // We check if :data exists, if so we prefer that
+  if (STRINGP (data))
+    {
+      if (SBYTES (data) == expected)
+	memcpy (c->pixel, SDATA (data), expected);
+      else
+	image_error ("Canvas :data size mismatch: expected %d bytes",
+		     make_fixnum (expected));
+      return;
+    }
+  else if (VECTORP (data))
+    {
+      eassert(expected == ASIZE (data) * 4);
+      for (int i = 0; i < ASIZE (data); i++)
+	c->pixel[i] = XFIXNUM (AREF (data, i));
+    }
+  else if (STRINGP (file)) // else we load the :file
+    {
+      Lisp_Object found = image_find_image_file (file);
+      if (!STRINGP (found))
+	{
+	  image_error ("Cannot find image :file to load for canvas %s", file);
+	  return;
+	}
+      Lisp_Object encoded = ENCODE_FILE (found);
+      int fd = emacs_open (SSDATA (encoded), O_RDONLY | O_BINARY, 0);
+      if (fd < 0)
+	{
+	  image_error ("Cannot open image :file for canvas %s", file);
+	  return;
+	}
+      ptrdiff_t nbytes;
+      char *buf = slurp_file (fd, &nbytes);
+      emacs_close (fd);
+      if (!buf)
+	{
+	  image_error ("Cannot read image :file for canvas %s", file);
+	  return;
+	}
+      if (nbytes == expected)
+	memcpy (c->pixel, buf, expected);
+      else
+	image_error ("Canvas :file size mismatch for %s", file);
+      xfree (buf);
+    }
+}
+
+static void
+canvas_reload_data (struct Lisp_Canvas *c, Lisp_Object image)
+{
+  struct image_keyword fmt[CANVAS_LAST];
+  memcpy (fmt, canvas_format, sizeof fmt);
+  if (parse_image_spec (image, fmt, CANVAS_LAST, Qcanvas))
+    canvas_apply_data (c, fmt, c->width, c->height);
 }
 
 /* Get canvas object for IMAGE specification. Return nil on error.  */
@@ -5516,6 +5594,9 @@ static Lisp_Object canvas_get (Lisp_Object image)
       c->pixel = xzalloc (4 * width * height);
       canvas = make_lisp_ptr (c, Lisp_Vectorlike);
       Fputhash (id, canvas, canvas_map);
+
+      /* Initialize pixel buffer from :data or :file if supplied. */
+      canvas_apply_data (c, fmt, width, height);
     }
 
   return canvas;
@@ -5624,12 +5705,15 @@ uint32_t* canvas_pixel (Lisp_Object image)
 
 /* Refresh canvas IMAGE.  */
 
-void canvas_refresh (Lisp_Object image)
+void canvas_refresh (Lisp_Object image, Lisp_Object reload_data)
 {
   Lisp_Object canvas = canvas_get (image);
 
   if (NILP (canvas))
     error ("Not a canvas");
+
+  if (!NILP (reload_data))
+    canvas_reload_data (XCANVAS (canvas), image);
 
   /* Increment refresh counter; wrap around
      to positive on overflow.  */
@@ -5641,6 +5725,24 @@ void canvas_refresh (Lisp_Object image)
   block_input ();
   redraw_canvas_glyphs (canvas);
   unblock_input ();
+}
+
+DEFUN ("canvas-refresh",
+       Fcanvas_refresh,
+       Scanvas_refresh,
+       1, 2, 0,
+       doc: /* Refresh canvas IMAGE.
+	If RELOAD-DATA is non-nil, reload the data.*/)
+  (Lisp_Object image, Lisp_Object reload_data)
+{
+  if (!canvas_image_p (image))
+    wrong_type_argument (Qcanvas, image);
+
+  if (!NILP (reload_data))
+    canvas_refresh(image, Qt);
+
+  canvas_refresh(image, Qnil);
+  return Qnil;
 }
 
 #endif
@@ -13413,6 +13515,7 @@ non-numeric, there is no explicit limit on the size of images.  */);
   add_image_type (Qcanvas);
   canvas_map = make_hash_table (&hashtest_eq, DEFAULT_HASH_SIZE, Weak_Key_Or_Value);
   staticpro (&canvas_map);
+  defsubr (&Scanvas_refresh);
 #endif
 
 #if defined (HAVE_IMAGEMAGICK)
