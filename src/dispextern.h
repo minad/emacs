@@ -3726,7 +3726,7 @@ extern void update_redisplay_ticks (int, struct window *);
 
 #ifdef HAVE_CANVAS
 extern uint32_t* canvas_pixel (Lisp_Object);
-extern void canvas_refresh (Lisp_Object);
+extern void canvas_refresh (Lisp_Object, Lisp_Object);
 extern void canvas_prepare (struct frame *f, struct image *img);
 #endif
 
