@@ -5735,6 +5735,8 @@ static void canvas_refresh (Lisp_Object image, Lisp_Object reload_data)
   unblock_input ();
 }
 
+/* TODO: Rename to memimage-redraw or image-redraw? However we support
+   data reloading only for memimages. */
 DEFUN ("canvas-refresh",
        Fcanvas_refresh,
        Scanvas_refresh,
