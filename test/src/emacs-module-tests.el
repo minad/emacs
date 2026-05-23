@@ -617,4 +617,11 @@ See Bug#36226."
 ;; TODO Test to load from file
 ;; TODO Test to reload vector
 
+;; TODO Update https://github.com/minad/emacs-canvas-patch
+;; TODO Update https://github.com/minad/emacs-shader-demo
+;; TODO Update https://github.com/minad/doom-on-emacs
+
+;; TODO Add additional file/vector load and vector reload tests to
+;; https://github.com/minad/emacs-canvas-patch
+
 ;;; emacs-module-tests.el ends here
