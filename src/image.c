@@ -3370,18 +3370,15 @@ image_set_transform (struct frame *f, struct image *img)
   cairo_pattern_t *pattern = cairo_pattern_create_rgb (0, 0, 0);
   cairo_pattern_set_matrix (pattern, &cr_matrix);
 
+  int cairo_filter = smoothing ? CAIRO_FILTER_BEST : CAIRO_FILTER_NEAREST;
 #ifdef HAVE_CANVAS
   /* Performance degrades with CAIRO_FILTER_BEST when using canvas, and possibly
      we get HW acceleration from CAIRO_FILTER_GOOD */
   if (EQ (image_spec_value (img->spec, QCtype, NULL), Qcanvas))
-    {
-      cairo_pattern_set_filter (pattern, smoothing
-				? CAIRO_FILTER_GOOD : CAIRO_FILTER_NEAREST);
-    }
+    cairo_filter = smoothing ? CAIRO_FILTER_GOOD : CAIRO_FILTER_NEAREST;
 #endif
+  cairo_pattern_set_filter (pattern, filter);
 
-  cairo_pattern_set_filter (pattern, smoothing
-                            ? CAIRO_FILTER_BEST : CAIRO_FILTER_NEAREST);
   /* Dummy solid color pattern just to record pattern matrix.  */
   img->cr_data = pattern;
 # elif defined (HAVE_XRENDER)
