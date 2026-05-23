@@ -7486,14 +7486,14 @@ canvas} creates a canvas, for instance as follows:
 (defvar my-canvas
   '(image :type canvas
           :canvas-id my-identifier
-          :canvas-width 800
-          :canvas-height 600))
+          :data-width 800
+          :data-height 600))
 @end lisp
 
 The image specification must specify a unique identifier symbol
 @code{:canvas-id}.  The identifier must be different for two canvases
 with different size.  The positive integer width and positive integer
-height of the canvas @code{:canvas-width} and @code{:canvas-height} are
+height of the canvas @code{:data-width} and @code{:data-height} are
 mandatory.
 
 Other image properties like @code{:scale}, @code{:margin},
@@ -7511,7 +7511,7 @@ string or overlay:
 The module function @code{canvas_pixel} gives access to the writable
 pixel buffer in ARGB32 format.  The buffer has size @var{width} *
 @var{height} and is organized in row-major order.  After drawing to the
-pixel buffer, redraw the canvas with a call to @code{canvas_refresh}.
+pixel buffer, redraw the canvas with a call to @code{canvas-refresh}.
 @xref{Writing Dynamic Modules} for details regarding dynamic
 modules and how to use this functionality in them.
 

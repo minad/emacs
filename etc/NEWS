@@ -35,7 +35,7 @@ applies, and please also update docstrings as needed.
 An image specifier with ':type canvas' creates a canvas image.  The
 canvas has an associated writable pixel buffer in ARGB32 format.  The
 dynamic module function 'canvas_pixel' gives access to the pixel buffer.
-After drawing to the pixel buffer, call 'canvas_refresh' to redraw.
+After drawing to the pixel buffer, call 'canvas-refresh' to redraw.
 
 +++
 ** 'line-spacing' now supports specifying spacing above the line.

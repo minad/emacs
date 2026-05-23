@@ -595,21 +595,26 @@ See Bug#36226."
   (skip-unless (display-graphic-p))
   (should (mod-test-canvas '(image :type canvas
                                    :canvas-id mod-test
-                                   :canvas-width 800
-                                   :canvas-height 600)
+                                   :data-width 800
+                                   :data-height 600)
                            t)))
 
 (ert-deftest mod-test-canvas/invalid ()
   (skip-unless (image-type-available-p 'canvas))
   (skip-unless (display-graphic-p))
   (should-error (mod-test-canvas '(image :type canvas
-                                         :canvas-width 800
-                                         :canvas-height 600)
+                                         :data-width 800
+                                         :data-height 600)
                                  t))
   (should-error (mod-test-canvas '(image :type canvas
                                          :canvas-id mod-test)
                                  t))
   (should-error (mod-test-canvas nil nil))
   (should-error (mod-test-canvas '(image :type xbm :data "") nil)))
+
+;; TODO Test to load from data unibyte
+;; TODO Test to load from data vector
+;; TODO Test to load from file
+;; TODO Test to reload vector
 
 ;;; emacs-module-tests.el ends here

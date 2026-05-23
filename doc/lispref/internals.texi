@@ -2034,6 +2034,7 @@ The function gives access to the pixel buffer.  The pixel buffer
 The pointer will be valid as long as the object @var{canvas} is alive.
 @end deftypefn
 
+TODO: canvas-refresh here, or document this somewhere else?
 @deftypefn Function void canvas_refresh (emacs_env *@var{env}, emacs_value @var{canvas})
 Request that the @var{canvas} image is redrawn.
 @end deftypefn
