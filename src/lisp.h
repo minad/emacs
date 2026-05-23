@@ -2912,6 +2912,14 @@ xmint_pointer (Lisp_Object a)
   return XUNTAG (a, Lisp_Vectorlike, struct Lisp_Misc_Ptr)->pointer;
 }
 
+/* TODO: We should remove Lisp_Canvas from the Lisp level and put it
+   into image.c completely.  The reason why it is still a Lisp object
+   right now is since we maintain it in a canvas_map hash table, which
+   can only hold Lisp objects, and we rely on the GC to clean it up. We
+   should rework this with our own simple lookup table.  This way the
+   patch will also get more acceptable since the canvas is not exposed
+   on the Lisp level at all. Unfortunately this change is a little more
+   difficult and we have to think how to do it correctly. */
 struct Lisp_Canvas
 {
   union vectorlike_header header;
