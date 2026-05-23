@@ -5430,6 +5430,8 @@ xbm_load (struct frame *f, struct image *img)
 			      Canvas
  ***********************************************************************/
 
+/* TODO: Rename canvas to memimage or pixbuf. */
+
 /* Indices of image specification fields in canvas_format, below.  */
 
 enum canvas_keyword_index
