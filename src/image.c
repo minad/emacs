@@ -2265,6 +2265,8 @@ filter_image_spec (Lisp_Object spec)
 {
   Lisp_Object out = Qnil;
 
+  bool is_canvas = EQ (image_spec_value (spec, QCtype, NULL), Qcanvas);
+
   /* Skip past the `image' element.  */
   if (CONSP (spec))
     spec = XCDR (spec);
@@ -2286,7 +2288,8 @@ filter_image_spec (Lisp_Object spec)
 
 	  /* Some animation-related data doesn't affect display, but
 	     breaks the image cache.  Filter those out.  */
-	  if (!(EQ (key, QCanimate_buffer)
+	  if (!((is_canvas && EQ (key, QCdata))
+		|| EQ (key, QCanimate_buffer)
 		|| EQ (key, QCanimate_tardiness)
 		|| EQ (key, QCanimate_position)))
 	    {
