@@ -5553,6 +5553,8 @@ canvas_apply_data (struct Lisp_Canvas *c, struct image_keyword *fmt,
     }
 }
 
+/* TODO: Also inline this function in canvas_refresh. It is only used
+   once and it is short enough. */
 static void
 canvas_reload_data (struct Lisp_Canvas *c, Lisp_Object image)
 {
