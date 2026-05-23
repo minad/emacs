@@ -5746,7 +5746,9 @@ DEFUN ("canvas-refresh",
   if (!canvas_image_p (image))
     wrong_type_argument (Qcanvas, image);
 
-  // TODO: Inline canvas_refresh from above here!
+  // TODO: Inline canvas_refresh from above here. This DEFUN defines the
+  // function Fcanvas_refresh and above we define canvas_refresh. We
+  // don't need both functions.
   canvas_refresh(image, !NILP (reload_data));
 
   return Qnil;
