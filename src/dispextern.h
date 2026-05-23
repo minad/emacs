@@ -24,7 +24,10 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 
 #include "character.h"
 
-#if defined HAVE_MODULES && (defined HAVE_X_WINDOWS || defined USE_CAIRO)
+/* TODO: Implement canvas support for more platforms. I think we need
+   Windows and NS for it to be acceptable, since these guys participated
+   in the discussion. */
+#if defined HAVE_X_WINDOWS || defined USE_CAIRO
 #  define HAVE_CANVAS 1
 #endif
 
@@ -3726,7 +3729,6 @@ extern void update_redisplay_ticks (int, struct window *);
 
 #ifdef HAVE_CANVAS
 extern uint32_t* canvas_pixel (Lisp_Object);
-extern void canvas_refresh (Lisp_Object, Lisp_Object);
 extern void canvas_prepare (struct frame *f, struct image *img);
 #endif
 

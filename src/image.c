@@ -5455,8 +5455,8 @@ static const struct image_keyword canvas_format[CANVAS_LAST] =
   {":file",		IMAGE_STRING_VALUE,			0},
   {":data",		IMAGE_DONT_CHECK_VALUE_TYPE,			0},
   {":canvas-id",	IMAGE_SYMBOL_VALUE,			1},
-  {":canvas-width",	IMAGE_POSITIVE_INTEGER_VALUE,		1},
-  {":canvas-height",	IMAGE_POSITIVE_INTEGER_VALUE,		1},
+  {":data-width",	IMAGE_POSITIVE_INTEGER_VALUE,		1},
+  {":data-height",	IMAGE_POSITIVE_INTEGER_VALUE,		1},
   {":ascent",		IMAGE_ASCENT_VALUE,			0},
   {":margin",		IMAGE_NON_NEGATIVE_INTEGER_VALUE_OR_PAIR, 0},
   {":relief",		IMAGE_INTEGER_VALUE,			0},
@@ -5488,7 +5488,8 @@ static void
 canvas_apply_data (struct Lisp_Canvas *c, struct image_keyword *fmt,
 		   int width, int height)
 {
-  ptrdiff_t expected = (ptrdiff_t) 4 * width * height;
+  ptrdiff_t expected_size = (ptrdiff_t) width * height;
+  ptrdiff_t expected_bytes = (ptrdiff_t) 4 * expected_size;
 
 
   Lisp_Object data = fmt[CANVAS_DATA].value;
@@ -5497,16 +5498,19 @@ canvas_apply_data (struct Lisp_Canvas *c, struct image_keyword *fmt,
   // We check if :data exists, if so we prefer that
   if (STRINGP (data))
     {
-      if (SBYTES (data) == expected)
-	memcpy (c->pixel, SDATA (data), expected);
-      else
-	image_error ("Canvas :data size mismatch: expected %d bytes",
-		     make_fixnum (expected));
-      return;
+      if (SBYTES (data) != expected_bytes)
+	{
+          image_error ("Canvas :data size mismatch: expected %d bytes",
+		       make_fixnum (expected_bytes));
+	  return;
+	}
+      memcpy (c->pixel, SDATA (data), expected_bytes);
     }
   else if (VECTORP (data))
     {
-      eassert(expected == ASIZE (data) * 4);
+      // TODO: image_error instead of assertion like above
+      eassert(expected_size == ASIZE (data));
+      // TODO: FIXNUMP checks need to be added, before XFIXNUM
       for (int i = 0; i < ASIZE (data); i++)
 	c->pixel[i] = XFIXNUM (AREF (data, i));
     }
@@ -5533,8 +5537,8 @@ canvas_apply_data (struct Lisp_Canvas *c, struct image_keyword *fmt,
 	  image_error ("Cannot read image :file for canvas %s", file);
 	  return;
 	}
-      if (nbytes == expected)
-	memcpy (c->pixel, buf, expected);
+      if (nbytes == expected_bytes)
+	memcpy (c->pixel, buf, expected_bytes);
       else
 	image_error ("Canvas :file size mismatch for %s", file);
       xfree (buf);
@@ -5702,7 +5706,7 @@ uint32_t* canvas_pixel (Lisp_Object image)
 
 /* Refresh canvas IMAGE.  */
 
-void canvas_refresh (Lisp_Object image, Lisp_Object reload_data)
+static void canvas_refresh (Lisp_Object image, Lisp_Object reload_data)
 {
   Lisp_Object canvas = canvas_get (image);
 
@@ -5735,10 +5739,9 @@ DEFUN ("canvas-refresh",
   if (!canvas_image_p (image))
     wrong_type_argument (Qcanvas, image);
 
-  if (!NILP (reload_data))
-    canvas_refresh(image, Qt);
+  // TODO: Inline canvas_refresh from above here!
+  canvas_refresh(image, !NILP (reload_data));
 
-  canvas_refresh(image, Qnil);
   return Qnil;
 }
 
