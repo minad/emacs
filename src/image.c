@@ -13520,6 +13520,12 @@ non-numeric, there is no explicit limit on the size of images.  */);
 #if defined (HAVE_CANVAS)
   DEFSYM (Qcanvas, "canvas");
   add_image_type (Qcanvas);
+
+  /* TODO: When we move away from Lisp_Canvas we make this a Weak_Key
+     hash table, and as value we store the pointer to the canvas as
+     FIXNUM. Then we have to keep a linked list of memimages, which we
+     check occasionally. If a memimage is not referenced anymore in
+     canvas_map it can be freed. */
   canvas_map = make_hash_table (&hashtest_eq, DEFAULT_HASH_SIZE, Weak_Key_Or_Value);
   staticpro (&canvas_map);
   defsubr (&Scanvas_refresh);
