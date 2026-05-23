@@ -32839,6 +32839,12 @@ static void redraw_canvas_glyphs_window_1 (struct window *w, Lisp_Object canvas)
 	  int start = row->x;
 	  for (int x = 0; x < row->used[TEXT_AREA]; ++x)
 	    {
+	      /* TODO: Check if some logic changes are needed here. Eli
+                 made some claims that the redrawing logic is fragile
+                 and that many special cases need to be handled. Gerd
+                 argued that one could also just wait for the next
+                 redisplay to correct glitches. In any case we should
+                 check. */
 	      struct glyph *glyph = row->glyphs[TEXT_AREA] + x;
 	      if (glyph->type == IMAGE_GLYPH)
 		{
