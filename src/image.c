@@ -5631,8 +5631,7 @@ canvas_load (struct frame *f, struct image *img)
 
 /* Prepare image IMG from canvas for display.  */
 
-void
-canvas_prepare (struct frame *f, struct image *img)
+static void canvas_prepare (struct frame *f, struct image *img)
 {
   block_input ();
 

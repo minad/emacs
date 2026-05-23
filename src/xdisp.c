@@ -32752,10 +32752,11 @@ static void redraw_canvas_glyphs_window_1 (struct window *w, Lisp_Object canvas)
 	      struct glyph *glyph = row->glyphs[TEXT_AREA] + x;
 	      if (glyph->type == IMAGE_GLYPH)
 		{
+		/* TODO: Check EQ with the image spec here instead of with the canvas. */
 		  struct image* img = IMAGE_OPT_FROM_ID (f, glyph->u.img_id);
 		  if (img && EQ (img->lisp_data, canvas))
 		    {
-		      canvas_prepare (f, img);
+		      prepare_image_for_display (f, img);
 		      draw_glyphs (w, start, row, TEXT_AREA, x, x + 1, DRAW_NORMAL_TEXT, 0);
 		    }
 		}
