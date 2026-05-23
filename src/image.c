@@ -5456,6 +5456,12 @@ static const struct image_keyword canvas_format[CANVAS_LAST] =
   {":type",		IMAGE_SYMBOL_VALUE,			1},
   {":file",		IMAGE_STRING_VALUE,			0},
   {":data",		IMAGE_DONT_CHECK_VALUE_TYPE,			0},
+  /* TODO: Instead of the :canvas-id we could use object identity of the
+     image specification to identify the memimage. This means two
+     different (:type memimage ...) objects would not identify the same
+     image. In order to access a memimage you would have to reuse the
+     exact object.  Such a change would go hand in hand with the change
+     where we move away from Lisp_Canvas, see the comment in lisp.h.  */
   {":canvas-id",	IMAGE_SYMBOL_VALUE,			1},
   {":data-width",	IMAGE_POSITIVE_INTEGER_VALUE,		1},
   {":data-height",	IMAGE_POSITIVE_INTEGER_VALUE,		1},
