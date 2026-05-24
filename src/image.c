@@ -5525,11 +5525,18 @@ canvas_apply_data (struct Lisp_Canvas *c, struct image_keyword *fmt,
     }
   else if (VECTORP (data))
     {
-      // TODO: image_error instead of assertion like above
-      eassert(expected_size == ASIZE (data));
-      // TODO: FIXNUMP checks need to be added, before XFIXNUM
+      if (ASIZE (data) != expected_size)
+	{
+	  image_error ("Canvas: :data size mismatch: expected %d bytes",
+		       make_fixnum (expected_bytes));
+	  return;
+	}
+
       for (int i = 0; i < ASIZE (data); i++)
-	c->pixel[i] = XFIXNUM (AREF (data, i));
+	{
+	  FIXNUMP (AREF (data, i));
+	  c->pixel[i] = XFIXNUM (AREF (data, i));
+	}
     }
   else if (STRINGP (file)) // else we load the :file
     {
@@ -5560,17 +5567,6 @@ canvas_apply_data (struct Lisp_Canvas *c, struct image_keyword *fmt,
 	image_error ("Canvas :file size mismatch for %s", file);
       xfree (buf);
     }
-}
-
-/* TODO: Also inline this function in canvas_refresh. It is only used
-   once and it is short enough. */
-static void
-canvas_reload_data (struct Lisp_Canvas *c, Lisp_Object image)
-{
-  struct image_keyword fmt[CANVAS_LAST];
-  memcpy (fmt, canvas_format, sizeof fmt);
-  if (parse_image_spec (image, fmt, CANVAS_LAST, Qcanvas))
-    canvas_apply_data (c, fmt, c->width, c->height);
 }
 
 /* Get canvas object for IMAGE specification. Return nil on error.  */
@@ -5722,17 +5718,31 @@ uint32_t* canvas_pixel (Lisp_Object image)
   return XCANVAS (canvas)->pixel;
 }
 
-/* Refresh canvas IMAGE.  */
-
-static void canvas_refresh (Lisp_Object image, Lisp_Object reload_data)
+/* TODO: Rename to memimage-redraw or image-redraw? However we support
+   data reloading only for memimages. */
+DEFUN ("canvas-refresh",
+       Fcanvas_refresh,
+       Scanvas_refresh,
+       1, 2, 0,
+       doc: /* Refresh canvas IMAGE.
+	       If RELOAD-DATA is non-nil, reload the data.*/)
+  (Lisp_Object image, Lisp_Object reload_data)
 {
   Lisp_Object canvas = canvas_get (image);
+
+  if (!canvas_image_p (image))
+    wrong_type_argument (Qcanvas, image);
 
   if (NILP (canvas))
     error ("Not a canvas");
 
   if (!NILP (reload_data))
-    canvas_reload_data (XCANVAS (canvas), image);
+    {
+      struct image_keyword fmt[CANVAS_LAST];
+      memcpy (fmt, canvas_format, sizeof fmt);
+      if (parse_image_spec (image, fmt, CANVAS_LAST, Qcanvas))
+	canvas_apply_data (canvas, fmt, canvas->width, canvas->height);
+    }
 
   /* Increment refresh counter; wrap around
      to positive on overflow.  */
@@ -5744,25 +5754,6 @@ static void canvas_refresh (Lisp_Object image, Lisp_Object reload_data)
   block_input ();
   redraw_canvas_glyphs (canvas);
   unblock_input ();
-}
-
-/* TODO: Rename to memimage-redraw or image-redraw? However we support
-   data reloading only for memimages. */
-DEFUN ("canvas-refresh",
-       Fcanvas_refresh,
-       Scanvas_refresh,
-       1, 2, 0,
-       doc: /* Refresh canvas IMAGE.
-	If RELOAD-DATA is non-nil, reload the data.*/)
-  (Lisp_Object image, Lisp_Object reload_data)
-{
-  if (!canvas_image_p (image))
-    wrong_type_argument (Qcanvas, image);
-
-  // TODO: Inline canvas_refresh from above here. This DEFUN defines the
-  // function Fcanvas_refresh and above we define canvas_refresh. We
-  // don't need both functions.
-  canvas_refresh(image, !NILP (reload_data));
 
   return Qnil;
 }
