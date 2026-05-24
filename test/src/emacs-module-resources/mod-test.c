@@ -765,8 +765,7 @@ Fmod_test_canvas (emacs_env *env, ptrdiff_t nargs,
         return env->intern (env, "nil");
       assert (buf);
       memset (buf, 42, 4 * 800 * 600);
-      // TODO: Use env->funcall intern canvas-refresh ...
-      env->canvas_refresh (env, args[0]);
+      env->funcall (env, env->intern(env, "canvas-refresh"), 2, &[args[0], Qnil]);
     }
   else
     {
