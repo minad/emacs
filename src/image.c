@@ -5554,12 +5554,19 @@ canvas_apply_data (struct canvas *c, struct image_keyword *fmt,
   // We check if :data exists, if so we prefer that
   if (STRINGP (data))
     {
+      if (STRING_MULTIBYTE (data))
+	{
+          image_error ("Canvas :data string must be unibyte");
+	  return;
+	}
+
       if (SBYTES (data) != expected_bytes)
 	{
           image_error ("Canvas :data size mismatch: expected %d bytes",
 		       make_fixnum (expected_bytes));
 	  return;
 	}
+
       memcpy (c->pixel, SDATA (data), expected_bytes);
     }
   else if (VECTORP (data))
