@@ -163,7 +163,6 @@ union emacs_align_type
   struct Lisp_Overlay Lisp_Overlay;
   struct Lisp_Subr Lisp_Subr;
   struct Lisp_Sqlite Lisp_Sqlite;
-  struct Lisp_Canvas Lisp_Canvas;
   struct Lisp_User_Ptr Lisp_User_Ptr;
   struct terminal terminal;
   struct thread_state thread_state;
@@ -3235,9 +3234,6 @@ cleanup_vector (struct Lisp_Vector *vector)
 	ptrdiff_t bytes = obarray_size (o) * sizeof *o->buckets;
 	hash_table_allocated_bytes -= bytes;
       }
-      break;
-    case PVEC_CANVAS:
-      xfree (PSEUDOVEC_STRUCT (vector, Lisp_Canvas)->pixel);
       break;
     /* Keep the switch exhaustive.  */
     case PVEC_NORMAL_VECTOR:

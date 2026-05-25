@@ -2133,15 +2133,6 @@ print_vectorlike_unreadable (Lisp_Object obj, Lisp_Object printcharfun,
 	return;
       }
 
-    case PVEC_CANVAS:
-      {
-	struct Lisp_Canvas *c = XCANVAS (obj);
-	int i = sprintf (buf, "#<canvas id=%s width=%d height=%d refresh=%d pixel=%p>",
-			 SSDATA (c->id), c->width, c->height, c->refresh, c->pixel);
-	strout (buf, i, i, printcharfun);
-	return;
-      }
-
     /* Types handled earlier.  */
     case PVEC_NORMAL_VECTOR:
     case PVEC_RECORD:

@@ -3073,7 +3073,6 @@ dump_vectorlike (struct dump_context *ctx,
     case PVEC_FREE:
     case PVEC_TS_PARSER:
     case PVEC_TS_NODE:
-    case PVEC_CANVAS:
       break;
     }
   int iptype = ptype;

@@ -1009,7 +1009,6 @@ enum pvec_type
   PVEC_TS_NODE,
   PVEC_TS_COMPILED_QUERY,
   PVEC_SQLITE,
-  PVEC_CANVAS,
 
   /* These should be last, for internal_equal and sxhash_obj.  */
   PVEC_CLOSURE,
@@ -2912,27 +2911,6 @@ xmint_pointer (Lisp_Object a)
   return XUNTAG (a, Lisp_Vectorlike, struct Lisp_Misc_Ptr)->pointer;
 }
 
-/* TODO: We should remove Lisp_Canvas from the Lisp level and put it
-   into image.c completely.  The reason why it is still a Lisp object
-   right now is since we maintain it in a canvas_map hash table, which
-   can only hold Lisp objects, and we rely on the GC to clean it up. We
-   should rework this with our own simple lookup table.  This way the
-   patch will also get more acceptable since the canvas is not exposed
-   on the Lisp level at all. Unfortunately this change is a little more
-   difficult and we have to think how to do it correctly. */
-struct Lisp_Canvas
-{
-  union vectorlike_header header;
-  /* Canvas ID as string.  */
-  Lisp_Object id;
-  /* Incremented if the canvas should be redrawn.  */
-  int refresh;
-  /* Dimension of the canvas.  */
-  int width, height;
-  /* Pinned pixel memory buffer in ARGB32 format.  */
-  uint32_t *pixel;
-} GCALIGNED_STRUCT;
-
 struct Lisp_Sqlite
 {
   union vectorlike_header header;
@@ -3044,19 +3022,6 @@ XSQLITE (Lisp_Object a)
 {
   eassert (SQLITEP (a));
   return XUNTAG (a, Lisp_Vectorlike, struct Lisp_Sqlite);
-}
-
-INLINE bool
-CANVASP (Lisp_Object x)
-{
-  return PSEUDOVECTORP (x, PVEC_CANVAS);
-}
-
-INLINE struct Lisp_Canvas *
-XCANVAS (Lisp_Object a)
-{
-  eassert (CANVASP (a));
-  return XUNTAG (a, Lisp_Vectorlike, struct Lisp_Canvas);
 }
 
 INLINE bool
