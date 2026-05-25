@@ -5522,7 +5522,6 @@ canvas_apply_data (struct canvas *c, struct image_keyword *fmt,
   ptrdiff_t expected_size = (ptrdiff_t) width * height;
   ptrdiff_t expected_bytes = (ptrdiff_t) 4 * expected_size;
 
-
   Lisp_Object data = fmt[CANVAS_DATA].value;
   Lisp_Object file = fmt[CANVAS_FILE].value;
 
@@ -5604,12 +5603,8 @@ static struct canvas* canvas_get (Lisp_Object image)
     {
       if (c->width != width || c->height != height)
         {
-          /* TODO: Better error message, displaying the printed spec
-	     maybe?  Otoh this error will only occur when the
-	     data-width/height in the image spec is changed via
-	     mutation. */
-	  image_error ("Inconsistent canvas dimension");
-	  return Qnil;
+          image_error ("Canvas size has changed unexpectedly (:data-width, :data-height)");
+	  return 0;
         }
     }
 
