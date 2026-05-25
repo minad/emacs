@@ -5672,7 +5672,7 @@ canvas_load (struct frame *f, struct image *img)
   struct canvas* c = canvas_get (img->spec, fmt);
 
   if (!c)
-    return 0;
+    return false;
 
   img->lisp_data = make_pointer_integer (c);
   img->refresh = 1;
@@ -5683,11 +5683,11 @@ canvas_load (struct frame *f, struct image *img)
 
   Emacs_Pix_Container ximg;
   if (!image_create_x_image_and_pixmap (f, img, c->width, c->height, 0, &ximg, 0))
-    return 0;
+    return false;
 
   image_put_x_image (f, img, ximg, 0);
 
-  return 1;
+  return true;
 }
 
 /* Prepare image IMG from canvas for display.  */
@@ -5782,9 +5782,10 @@ DEFUN ("canvas-refresh",
     error ("Not a canvas");
 
   if (!NILP (reload_data))
-      canvas_apply_data (c, fmt);
+    canvas_apply_data (c, fmt);
 
-  /* Increment refresh counter; reset to one on overflow.  */
+  /* Increment refresh counter; reset to one on overflow, since the
+     refresh counter must always be greater than zero.  */
   if (++c->refresh == 0)
     c->refresh = 1;
 
