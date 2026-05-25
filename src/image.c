@@ -5537,7 +5537,6 @@ canvas_free_unused (void)
 }
 
 /* Copy pixel data into canvas C from a parsed image keyword array FMT.
-   WIDTH and HEIGHT give the expected canvas dimensions.
 
    :data must be an unibyte string of exactly 4*WIDTH*HEIGHT bytes in
    ARGB32 format, or a vector of size WIDTH*HEIGHT in row-major order,
@@ -5545,10 +5544,9 @@ canvas_free_unused (void)
    ARGB32 format of size 4*WIDTH*HEIGHT bytes. */
 
 static void
-canvas_apply_data (struct canvas *c, struct image_keyword *fmt,
-		   int width, int height)
+canvas_apply_data (struct canvas *c, struct image_keyword *fmt)
 {
-  ptrdiff_t expected_size = (ptrdiff_t) width * height;
+  ptrdiff_t expected_size = (ptrdiff_t) c->width * c->height;
   ptrdiff_t expected_bytes = (ptrdiff_t) 4 * expected_size;
 
   Lisp_Object data = fmt[CANVAS_DATA].value;
@@ -5653,12 +5651,14 @@ canvas_get (Lisp_Object image)
       c->width = width;
       c->height = height;
       c->pixel = xzalloc (4 * width * height);
+
+      /* Register the canvas in the list and the map. */
       c->next = canvas_list;
       canvas_list = c;
       Fputhash (image, make_pointer_integer (c), canvas_map);
 
       /* Initialize pixel buffer from :data or :file if supplied. */
-      canvas_apply_data (c, fmt, width, height);
+      canvas_apply_data (c, fmt);
     }
 
   return c;
@@ -5783,8 +5783,9 @@ DEFUN ("canvas-refresh",
     {
       struct image_keyword fmt[CANVAS_LAST];
       memcpy (fmt, canvas_format, sizeof fmt);
-      if (parse_image_spec (image, fmt, CANVAS_LAST, Qcanvas))
-	canvas_apply_data (canvas, fmt, c->width, c->height);
+      bool ok = parse_image_spec (image, fmt, CANVAS_LAST, Qcanvas);
+      eassert (ok);
+      canvas_apply_data (c, fmt);
     }
 
   /* Increment refresh counter; reset to one on overflow.  */
