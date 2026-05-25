@@ -3360,8 +3360,9 @@ struct image
   /* Image id of this image.  */
   ptrdiff_t id;
 
-  /* Refresh counter reflecting the current version of the image.  */
-  int refresh;
+  /* Refresh counter reflecting the current version of the image.
+     Always larger than zero for images which may need refreshing.  */
+  uint32_t refresh;
 
   /* Hash collision chain.  */
   struct image *next, *prev;

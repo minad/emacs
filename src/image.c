@@ -5449,7 +5449,7 @@ struct canvas
   union vectorlike_header header;
   /* Image spec */
   Lisp_Object spec;
-  /* Incremented if the canvas should be redrawn */
+  /* Incremented if the canvas should be redrawn. Always larger than 0. */
   uint32_t refresh;
   /* Dimension of the canvas */
   int width, height;
@@ -5760,10 +5760,9 @@ DEFUN ("canvas-refresh",
 	canvas_apply_data (canvas, fmt, c->width, c->height);
     }
 
-  /* Increment refresh counter; wrap around on overflow.  */
-  int *p = &c->refresh;
-  if (ckd_add (p, *p, 1))
-    *p = 1;
+  /* Increment refresh counter; reset to one on overflow.  */
+  if (++c->refresh == 0)
+    c->refresh = 1;
 
   /* Redraw all glyphs.  */
   block_input ();
