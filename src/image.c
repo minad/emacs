@@ -1878,9 +1878,11 @@ prepare_image_for_display (struct frame *f, struct image *img)
     }
 #endif
 
-  /* Copy canvas pixel into pixmap if refresh counter has been updated.  */
-  Lisp_Object canvas = img->lisp_data;
-  if (CANVASP (canvas) && XCANVAS (canvas)->refresh != img->refresh)
+  /* Copy canvas pixel into pixmap if refresh counter has been updated.
+     For canvases the refresh counter is always >= 1. */
+  if (img->refresh
+      && EQ (image_spec_value (img->spec, QCtype, NULL), Qcanvas)
+      && img->refresh != XFIXNUMPTR (img->lisp_data))
     canvas_prepare (f, img);
 }
 
@@ -2365,6 +2367,10 @@ clear_image_cache (struct frame *f, Lisp_Object filter)
       /* Block input so that we won't be interrupted by a SIGIO
 	 while being in an inconsistent state.  */
       block_input ();
+
+      /* TODO: Clear canvas_list here. Free all canvases from the
+         canvas_list that are not present anymore in the canvas_map.
+         canvas_map is a hash map with weak keys! */
 
       if (!NILP (filter))
 	{
@@ -5441,6 +5447,21 @@ xbm_load (struct frame *f, struct image *img)
 
 /* TODO: Rename canvas to memimage or pixbuf. */
 
+struct canvas
+{
+  union vectorlike_header header;
+  /* Image spec */
+  Lisp_Object spec;
+  /* Incremented if the canvas should be redrawn */
+  int refresh;
+  /* Dimension of the canvas */
+  int width, height;
+  /* Pinned pixel memory buffer in ARGB32 format */
+  uint32_t *pixel;
+  /* Linked list of canvases */
+  struct canvas *next;
+};
+
 /* Indices of image specification fields in canvas_format, below.  */
 
 enum canvas_keyword_index
@@ -5465,13 +5486,6 @@ static const struct image_keyword canvas_format[CANVAS_LAST] =
   {":type",		IMAGE_SYMBOL_VALUE,			1},
   {":file",		IMAGE_STRING_VALUE,			0},
   {":data",		IMAGE_DONT_CHECK_VALUE_TYPE,			0},
-  /* TODO: Instead of the :canvas-id we could use object identity of the
-     image specification to identify the memimage. This means two
-     different (:type memimage ...) objects would not identify the same
-     image. In order to access a memimage you would have to reuse the
-     exact object.  Such a change would go hand in hand with the change
-     where we move away from Lisp_Canvas, see the comment in lisp.h.  */
-  {":canvas-id",	IMAGE_SYMBOL_VALUE,			1},
   {":data-width",	IMAGE_POSITIVE_INTEGER_VALUE,		1},
   {":data-height",	IMAGE_POSITIVE_INTEGER_VALUE,		1},
   {":ascent",		IMAGE_ASCENT_VALUE,			0},
@@ -5479,9 +5493,13 @@ static const struct image_keyword canvas_format[CANVAS_LAST] =
   {":relief",		IMAGE_INTEGER_VALUE,			0},
 };
 
-/* Weak hash map associating the canvas id with the canvas object.  */
+/* Weak hash map associating the image spec with the canvas object.  */
 
 static Lisp_Object canvas_map;
+
+/* Linked list of all canvases.  */
+
+static struct canvas* canvas_list = 0;
 
 /* Return true if OBJECT is a valid canvas image specification.  */
 
@@ -5502,7 +5520,7 @@ canvas_image_p (Lisp_Object object)
    If :data is provided that is preferred, else we load the :file */
 
 static void
-canvas_apply_data (struct Lisp_Canvas *c, struct image_keyword *fmt,
+canvas_apply_data (struct canvas *c, struct image_keyword *fmt,
 		   int width, int height)
 {
   ptrdiff_t expected_size = (ptrdiff_t) width * height;
@@ -5571,24 +5589,23 @@ canvas_apply_data (struct Lisp_Canvas *c, struct image_keyword *fmt,
 
 /* Get canvas object for IMAGE specification. Return nil on error.  */
 
-static Lisp_Object canvas_get (Lisp_Object image)
+static struct canvas* canvas_get (Lisp_Object image)
 {
   struct image_keyword fmt[CANVAS_LAST];
   memcpy (fmt, canvas_format, sizeof fmt);
   if (!parse_image_spec (image, fmt, CANVAS_LAST, Qcanvas))
     {
       image_error ("Invalid canvas image specification");
-      return Qnil;
+      return 0;
     }
 
-  Lisp_Object id = fmt[CANVAS_ID].value,
-              canvas = Fgethash (id, canvas_map, Qnil);
+  Lisp_Object canvas_ptr = Fgethash (image, canvas_map, Qnil);
+  struct canvas* c = NILP (canvas_ptr) ? 0 : XFIXNUMPTR (canvas_ptr);
   int width = XFIXNAT (fmt[CANVAS_WIDTH].value),
       height = XFIXNAT (fmt[CANVAS_HEIGHT].value);
 
-  if (!NILP (canvas))
+  if (c)
     {
-      struct Lisp_Canvas *c = XCANVAS (canvas);
       if (c->width != width || c->height != height)
         {
 	  image_error ("Inconsistent canvas dimension for :canvas-id %s",
@@ -5597,25 +5614,23 @@ static Lisp_Object canvas_get (Lisp_Object image)
         }
     }
 
-  if (NILP (canvas))
+  if (!c)
     {
-      struct Lisp_Canvas *c =
-	  ALLOCATE_PSEUDOVECTOR (struct Lisp_Canvas, id, PVEC_CANVAS);
-      /* Use the string here since the symbol, since the symbol is used
-	 as key in the weak hash table `canvas_map'. */
-      c->id = SYMBOL_NAME (id);
-      c->refresh = 0;
+      c = xzalloc (sizeof (struct canvas));
+      c->spec = image;
+      c->refresh = 1;
       c->width = width;
       c->height = height;
       c->pixel = xzalloc (4 * width * height);
-      canvas = make_lisp_ptr (c, Lisp_Vectorlike);
-      Fputhash (id, canvas, canvas_map);
+      c->next = canvas_list;
+      canvas_list = c;
+      Fputhash (id, make_pointer_integer (c), canvas_map);
 
       /* Initialize pixel buffer from :data or :file if supplied. */
       canvas_apply_data (c, fmt, width, height);
     }
 
-  return canvas;
+  return c;
 }
 
 /* Create canvas IMG in frame F.  Value is true if successful.  */
@@ -5623,13 +5638,13 @@ static Lisp_Object canvas_get (Lisp_Object image)
 static bool
 canvas_load (struct frame *f, struct image *img)
 {
-  Lisp_Object canvas = canvas_get (img->spec);
+  struct canvas* c = canvas_get (img->spec);
 
-  if (NILP (canvas))
+  if (!c)
     return 0;
 
-  struct Lisp_Canvas *c = XCANVAS (canvas);
-  img->lisp_data = canvas;
+  img->lisp_data = make_pointer_integer (c);
+  img->refresh = 1;
   img->width = c->width;
   img->height = c->height;
   img->background_valid = 1;
@@ -5650,10 +5665,10 @@ static void canvas_prepare (struct frame *f, struct image *img)
 {
   block_input ();
 
-  struct Lisp_Canvas *canvas = XCANVAS (img->lisp_data);
-  img->refresh = canvas->refresh;
-  uint32_t* src = canvas->pixel;
-  int width = canvas->width, height = canvas->height;
+  struct canvas *c = XFIXNUMPTR (img->lisp_data);
+  img->refresh = c->refresh;
+  uint32_t* src = c->pixel;
+  int width = c->width, height = c->height;
 
   /* Alpha channel is preserved here. Potentially preserve it when
      drawing the image in x_draw_image_glyph_string?  */
@@ -5710,12 +5725,12 @@ static void canvas_prepare (struct frame *f, struct image *img)
 
 uint32_t* canvas_pixel (Lisp_Object image)
 {
-  Lisp_Object canvas = canvas_get (image);
+  struct canvas* c = canvas_get (image);
 
-  if (NILP (canvas))
+  if (!c)
     error ("Not a canvas");
 
-  return XCANVAS (canvas)->pixel;
+  return c->pixel;
 }
 
 /* TODO: Rename to memimage-redraw or image-redraw? However we support
@@ -5728,12 +5743,8 @@ DEFUN ("canvas-refresh",
 	       If RELOAD-DATA is non-nil, reload the data.*/)
   (Lisp_Object image, Lisp_Object reload_data)
 {
-  Lisp_Object canvas = canvas_get (image);
-
-  if (!canvas_image_p (image))
-    wrong_type_argument (Qcanvas, image);
-
-  if (NILP (canvas))
+  struct canvas* c = canvas_get (image);
+  if (!c)
     error ("Not a canvas");
 
   if (!NILP (reload_data))
@@ -5741,12 +5752,11 @@ DEFUN ("canvas-refresh",
       struct image_keyword fmt[CANVAS_LAST];
       memcpy (fmt, canvas_format, sizeof fmt);
       if (parse_image_spec (image, fmt, CANVAS_LAST, Qcanvas))
-	canvas_apply_data (canvas, fmt, canvas->width, canvas->height);
+	canvas_apply_data (canvas, fmt, c->width, c->height);
     }
 
-  /* Increment refresh counter; wrap around
-     to positive on overflow.  */
-  int *p = &XCANVAS (canvas)->refresh;
+  /* Increment refresh counter; wrap around on overflow.  */
+  int *p = &c->refresh;
   if (ckd_add (p, *p, 1))
     *p = 1;
 
@@ -13530,12 +13540,7 @@ non-numeric, there is no explicit limit on the size of images.  */);
   DEFSYM (Qcanvas, "canvas");
   add_image_type (Qcanvas);
 
-  /* TODO: When we move away from Lisp_Canvas we make this a Weak_Key
-     hash table, and as value we store the pointer to the canvas as
-     FIXNUM. Then we have to keep a linked list of memimages, which we
-     check occasionally. If a memimage is not referenced anymore in
-     canvas_map it can be freed. */
-  canvas_map = make_hash_table (&hashtest_eq, DEFAULT_HASH_SIZE, Weak_Key_Or_Value);
+  canvas_map = make_hash_table (&hashtest_eq, DEFAULT_HASH_SIZE, Weak_Key);
   staticpro (&canvas_map);
   defsubr (&Scanvas_refresh);
 #endif

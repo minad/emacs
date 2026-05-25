@@ -78,7 +78,6 @@ class Lisp_Object:
         "PVEC_TS_NODE": "struct Lisp_TS_Node",
         "PVEC_TS_PARSER": "struct Lisp_TS_Parser",
         "PVEC_TS_COMPILED_QUERY": "struct Lisp_TS_Query",
-        "PVEC_CANVAS": "struct Lisp_Canvas",
     }
 
     # Object construction/initialization.
