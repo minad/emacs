@@ -32824,7 +32824,7 @@ append_stretch_glyph (struct it *it, Lisp_Object object,
     IT_EXPAND_MATRIX_WIDTH (it, area);
 }
 
-static void redraw_canvas_glyphs_window_1 (struct window *w, Lisp_Object canvas)
+static void redraw_image_glyphs_window_1 (struct window *w, Lisp_Object spec)
 {
   if (!w->current_matrix)
     return;
@@ -32848,9 +32848,8 @@ static void redraw_canvas_glyphs_window_1 (struct window *w, Lisp_Object canvas)
 	      struct glyph *glyph = row->glyphs[TEXT_AREA] + x;
 	      if (glyph->type == IMAGE_GLYPH)
 		{
-		/* TODO: Check EQ with the image spec here instead of with the canvas. */
 		  struct image* img = IMAGE_OPT_FROM_ID (f, glyph->u.img_id);
-		  if (img && EQ (img->lisp_data, canvas))
+		  if (img && EQ (img->spec, spec))
 		    {
 		      prepare_image_for_display (f, img);
 		      draw_glyphs (w, start, row, TEXT_AREA, x, x + 1, DRAW_NORMAL_TEXT, 0);
@@ -32862,23 +32861,23 @@ static void redraw_canvas_glyphs_window_1 (struct window *w, Lisp_Object canvas)
     }
 }
 
-static void redraw_canvas_glyphs_window (struct window *w, Lisp_Object canvas)
+static void redraw_image_glyphs_window (struct window *w, Lisp_Object spec)
 {
   while (w)
     {
       if (WINDOWP (w->contents))
-	redraw_canvas_glyphs_window (XWINDOW (w->contents), canvas);
+	redraw_image_glyphs_window (XWINDOW (w->contents), spec);
       else
-	redraw_canvas_glyphs_window_1 (w, canvas);
+	redraw_image_glyphs_window_1 (w, spec);
       w = NILP (w->next) ? NULL : XWINDOW (w->next);
     }
 }
 
-void redraw_canvas_glyphs (Lisp_Object canvas)
+void redraw_image_glyphs (Lisp_Object spec)
 {
   Lisp_Object tail, frame;
   FOR_EACH_FRAME (tail, frame)
-    redraw_canvas_glyphs_window (XWINDOW (XFRAME (frame)->root_window), canvas);
+    redraw_image_glyphs_window (XWINDOW (XFRAME (frame)->root_window), spec);
 }
 
 #endif	/* HAVE_WINDOW_SYSTEM */
