@@ -5608,8 +5608,11 @@ static struct canvas* canvas_get (Lisp_Object image)
     {
       if (c->width != width || c->height != height)
         {
-	  image_error ("Inconsistent canvas dimension for :canvas-id %s",
-		       SSDATA (SYMBOL_NAME (id)));
+          /* TODO: Better error message, displaying the printed spec
+	     maybe?  Otoh this error will only occur when the
+	     data-width/height in the image spec is changed via
+	     mutation. */
+	  image_error ("Inconsistent canvas dimension");
 	  return Qnil;
         }
     }
@@ -5624,7 +5627,7 @@ static struct canvas* canvas_get (Lisp_Object image)
       c->pixel = xzalloc (4 * width * height);
       c->next = canvas_list;
       canvas_list = c;
-      Fputhash (id, make_pointer_integer (c), canvas_map);
+      Fputhash (image, make_pointer_integer (c), canvas_map);
 
       /* Initialize pixel buffer from :data or :file if supplied. */
       canvas_apply_data (c, fmt, width, height);

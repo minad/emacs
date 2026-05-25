@@ -7485,16 +7485,13 @@ canvas} creates a canvas, for instance as follows:
 @lisp
 (defvar my-canvas
   '(image :type canvas
-          :canvas-id my-identifier
           :data-width 800
           :data-height 600))
 @end lisp
 
-The image specification must specify a unique identifier symbol
-@code{:canvas-id}.  The identifier must be different for two canvases
-with different size.  The positive integer width and positive integer
-height of the canvas @code{:data-width} and @code{:data-height} are
-mandatory.
+The image specification uniquely identifiers a canvas object.  The
+positive integer width and positive integer height of the canvas
+@code{:data-width} and @code{:data-height} are mandatory.
 
 Other image properties like @code{:scale}, @code{:margin},
 @code{:relief}, @code{:scale}, @code{:transform-smoothing} and
