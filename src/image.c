@@ -5620,9 +5620,8 @@ canvas_apply_data (struct canvas *c, struct image_keyword *fmt)
 /* Get canvas object for IMAGE specification. Return nil on error.  */
 
 static struct canvas*
-canvas_get (Lisp_Object image)
+canvas_get (Lisp_Object image, struct image_keyword *fmt)
 {
-  struct image_keyword fmt[CANVAS_LAST];
   memcpy (fmt, canvas_format, sizeof fmt);
   if (!parse_image_spec (image, fmt, CANVAS_LAST, Qcanvas))
     {
@@ -5669,7 +5668,8 @@ canvas_get (Lisp_Object image)
 static bool
 canvas_load (struct frame *f, struct image *img)
 {
-  struct canvas* c = canvas_get (img->spec);
+  struct image_keyword fmt[CANVAS_LAST];
+  struct canvas* c = canvas_get (img->spec, fmt);
 
   if (!c)
     return 0;
@@ -5757,7 +5757,8 @@ canvas_prepare (struct frame *f, struct image *img)
 
 uint32_t* canvas_pixel (Lisp_Object image)
 {
-  struct canvas* c = canvas_get (image);
+  struct image_keyword fmt[CANVAS_LAST];
+  struct canvas* c = canvas_get (image, fmt);
 
   if (!c)
     error ("Not a canvas");
@@ -5775,18 +5776,13 @@ DEFUN ("canvas-refresh",
 	       If RELOAD-DATA is non-nil, reload the data.*/)
   (Lisp_Object image, Lisp_Object reload_data)
 {
-  struct canvas* c = canvas_get (image);
+  struct image_keyword fmt[CANVAS_LAST];
+  struct canvas* c = canvas_get (image, fmt);
   if (!c)
     error ("Not a canvas");
 
   if (!NILP (reload_data))
-    {
-      struct image_keyword fmt[CANVAS_LAST];
-      memcpy (fmt, canvas_format, sizeof fmt);
-      bool ok = parse_image_spec (image, fmt, CANVAS_LAST, Qcanvas);
-      eassert (ok);
       canvas_apply_data (c, fmt);
-    }
 
   /* Increment refresh counter; reset to one on overflow.  */
   if (++c->refresh == 0)
