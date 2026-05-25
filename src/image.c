@@ -2367,8 +2367,6 @@ clear_image_cache (struct frame *f, Lisp_Object filter)
 	 while being in an inconsistent state.  */
       block_input ();
 
-      canvas_free_unused ();
-
       if (!NILP (filter))
 	{
 	  /* Filter image cache.  */
@@ -2484,6 +2482,8 @@ but the image is still displayed.  */)
 
   /* Also clear the animation caches.  */
   image_prune_animation_caches (true);
+
+  canvas_free_unused ();
 
   return Qnil;
 }
