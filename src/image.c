@@ -5752,7 +5752,7 @@ DEFUN ("canvas-refresh",
 
   /* Redraw all glyphs.  */
   block_input ();
-  redraw_canvas_glyphs (canvas);
+  redraw_image_glyphs (image);
   unblock_input ();
 
   return Qnil;

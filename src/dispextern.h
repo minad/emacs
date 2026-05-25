@@ -3637,11 +3637,7 @@ extern void get_font_ascent_descent (struct font *, int *, int *);
 
 #ifdef HAVE_WINDOW_SYSTEM
 
-/* TODO: We should generalize this to redraw_image_glyphs. Instead of a
- canvas object we should pass the image spec as argument. This might
- help later when improving animations and it is just generally the right
- thing to do. */
-extern void redraw_canvas_glyphs (Lisp_Object);
+extern void redraw_image_glyphs (Lisp_Object);
 extern void gui_get_glyph_overhangs (struct glyph *, struct frame *,
                                      int *, int *);
 extern struct font *font_for_underline_metrics (struct glyph_string *);
