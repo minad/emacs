@@ -2352,7 +2352,7 @@ free_image_cache (struct frame *f)
    If image-cache-eviction-delay is non-nil, this frees images in the cache
    which weren't displayed for at least that many seconds.  */
 
-static void canvas_clear (void);
+static void canvas_free_unused (void);
 
 void
 clear_image_cache (struct frame *f, Lisp_Object filter)
@@ -2367,7 +2367,7 @@ clear_image_cache (struct frame *f, Lisp_Object filter)
 	 while being in an inconsistent state.  */
       block_input ();
 
-      canvas_clear ();
+      canvas_free_unused ();
 
       if (!NILP (filter))
 	{
@@ -5513,7 +5513,7 @@ canvas_image_p (Lisp_Object object)
    canvas_map are freed.  */
 
 static void
-canvas_clear (void)
+canvas_free_unused (void)
 {
   DOHASH (canvas_map, k, v)
     ((struct canvas *)XFIXNUMPTR (v))->used = 1;
@@ -5540,8 +5540,9 @@ canvas_clear (void)
    WIDTH and HEIGHT give the expected canvas dimensions.
 
    :data must be an unibyte string of exactly 4*WIDTH*HEIGHT bytes in
-   ARGB32 format. :file names a binary file of the same size.
-   If :data is provided that is preferred, else we load the :file */
+   ARGB32 format, or a vector of size WIDTH*HEIGHT in row-major order,
+   where each element is a 32 bit integer. :file names a binary file in
+   ARGB32 format of size 4*WIDTH*HEIGHT bytes. */
 
 static void
 canvas_apply_data (struct canvas *c, struct image_keyword *fmt,
@@ -5591,6 +5592,7 @@ canvas_apply_data (struct canvas *c, struct image_keyword *fmt,
 	  image_error ("Cannot find image :file to load for canvas %s", file);
 	  return;
 	}
+
       Lisp_Object encoded = ENCODE_FILE (found);
       int fd = emacs_open (SSDATA (encoded), O_RDONLY | O_BINARY, 0);
       if (fd < 0)
@@ -5598,6 +5600,7 @@ canvas_apply_data (struct canvas *c, struct image_keyword *fmt,
 	  image_error ("Cannot open image :file for canvas %s", file);
 	  return;
 	}
+
       ptrdiff_t nbytes;
       char *buf = slurp_file (fd, &nbytes);
       emacs_close (fd);
@@ -5606,10 +5609,12 @@ canvas_apply_data (struct canvas *c, struct image_keyword *fmt,
 	  image_error ("Cannot read image :file for canvas %s", file);
 	  return;
 	}
+
       if (nbytes == expected_bytes)
 	memcpy (c->pixel, buf, expected_bytes);
       else
 	image_error ("Canvas :file size mismatch for %s", file);
+
       xfree (buf);
     }
 }
@@ -5624,7 +5629,7 @@ canvas_get (Lisp_Object image)
   if (!parse_image_spec (image, fmt, CANVAS_LAST, Qcanvas))
     {
       image_error ("Not a canvas image specification");
-      return 0;
+      return NULL;
     }
 
   Lisp_Object canvas_ptr = Fgethash (image, canvas_map, Qnil);
@@ -5632,18 +5637,16 @@ canvas_get (Lisp_Object image)
   int width = XFIXNAT (fmt[CANVAS_WIDTH].value),
       height = XFIXNAT (fmt[CANVAS_HEIGHT].value);
 
-  if (c)
+  if (c && (c->width != width || c->height != height))
     {
-      if (c->width != width || c->height != height)
-        {
-          image_error ("Canvas size has changed unexpectedly (:data-width, :data-height)");
-	  return 0;
-        }
+      image_error ("Canvas size has changed unexpectedly (:data-width, :data-height)");
+      return NULL;
     }
 
   if (!c)
     {
-      canvas_clear ();
+      /* Free old canvases now, when allocating a new one, to keep memory usage low. */
+      canvas_free_unused ();
 
       c = xzalloc (sizeof (struct canvas));
       c->refresh = 1;
