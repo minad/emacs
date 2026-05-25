@@ -5457,8 +5457,6 @@ struct canvas
   int width, height;
   /* Pinned pixel memory buffer in ARGB32 format */
   uint32_t *pixel;
-  /* Image spec */
-  Lisp_Object spec;
 };
 
 /* Indices of image specification fields in canvas_format, below.  */
@@ -5636,7 +5634,6 @@ static struct canvas* canvas_get (Lisp_Object image)
       canvas_clear ();
 
       c = xzalloc (sizeof (struct canvas));
-      c->spec = image;
       c->refresh = 1;
       c->width = width;
       c->height = height;
