@@ -5578,11 +5578,9 @@ canvas_apply_data (struct canvas *c, struct image_keyword *fmt,
 	  return;
 	}
 
+      // TODO: FIXNUMP checks need to be added, before XFIXNUM
       for (int i = 0; i < ASIZE (data); i++)
-	{
-	  FIXNUMP (AREF (data, i));
 	  c->pixel[i] = XFIXNUM (AREF (data, i));
-	}
     }
   else if (STRINGP (file)) // else we load the :file
     {
