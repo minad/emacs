@@ -5481,7 +5481,7 @@ static const struct image_keyword canvas_format[CANVAS_LAST] =
 {
   {":type",		IMAGE_SYMBOL_VALUE,			1},
   {":file",		IMAGE_STRING_VALUE,			0},
-  {":data",		IMAGE_DONT_CHECK_VALUE_TYPE,			0},
+  {":data",		IMAGE_DONT_CHECK_VALUE_TYPE,		0},
   {":data-width",	IMAGE_POSITIVE_INTEGER_VALUE,		1},
   {":data-height",	IMAGE_POSITIVE_INTEGER_VALUE,		1},
   {":ascent",		IMAGE_ASCENT_VALUE,			0},
@@ -5504,7 +5504,9 @@ canvas_image_p (Lisp_Object object)
 {
   struct image_keyword fmt[CANVAS_LAST];
   memcpy (fmt, canvas_format, sizeof fmt);
-  return parse_image_spec (object, fmt, CANVAS_LAST, Qcanvas);
+  return (parse_image_spec (object, fmt, CANVAS_LAST, Qcanvas)
+	  /* Either `:file' or `:data' can be present.  */
+	  && fmt[CANVAS_FILE].count + fmt[CANVAS_DATA].count <= 1);
 }
 
 /* Clear canvas list. All canvases which are not referenced anymore in
@@ -5551,7 +5553,6 @@ canvas_apply_data (struct canvas *c, struct image_keyword *fmt,
   Lisp_Object data = fmt[CANVAS_DATA].value;
   Lisp_Object file = fmt[CANVAS_FILE].value;
 
-  // We check if :data exists, if so we prefer that
   if (STRINGP (data))
     {
       if (STRING_MULTIBYTE (data))
