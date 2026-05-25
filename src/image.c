@@ -5447,16 +5447,18 @@ xbm_load (struct frame *f, struct image *img)
 struct canvas
 {
   union vectorlike_header header;
-  /* Image spec */
-  Lisp_Object spec;
+  /* Linked list of canvases */
+  struct canvas *next;
+  /* Is the canvas used? */
+  bool used;
   /* Incremented if the canvas should be redrawn. Always larger than 0. */
   uint32_t refresh;
   /* Dimension of the canvas */
   int width, height;
   /* Pinned pixel memory buffer in ARGB32 format */
   uint32_t *pixel;
-  /* Linked list of canvases */
-  struct canvas *next;
+  /* Image spec */
+  Lisp_Object spec;
 };
 
 /* Indices of image specification fields in canvas_format, below.  */
@@ -5512,9 +5514,21 @@ canvas_image_p (Lisp_Object object)
 
 static void canvas_clear (void)
 {
-    /* TODO: Walk over canvas_map with DOHASH, free all others.  Free
-       all canvases from the canvas_list that are not present anymore in
-       the canvas_map.  canvas_map is a hash map with weak keys! */
+    DOHASH (canvas_map, k, v)
+	((struct canvas *)XFIXNUMPTR (v))->used = 1;
+
+    struct canvas **p = &canvas_list;
+    while (*p) {
+	struct canvas *c = *p;
+	if (c->used) {
+	    p = &c->next;
+	    c->used = 0;
+	} else {
+	    *p = c->next;
+	    xfree (c->pixel);
+	    xfree (c);
+	}
+    }
 }
 
 /* Copy pixel data into canvas C from a parsed image keyword array FMT.
