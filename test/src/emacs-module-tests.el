@@ -594,7 +594,6 @@ See Bug#36226."
   (skip-unless (image-type-available-p 'canvas))
   (skip-unless (display-graphic-p))
   (should (mod-test-canvas '(image :type canvas
-                                   :canvas-id mod-test
                                    :data-width 800
                                    :data-height 600)
                            t)))
@@ -602,12 +601,7 @@ See Bug#36226."
 (ert-deftest mod-test-canvas/invalid ()
   (skip-unless (image-type-available-p 'canvas))
   (skip-unless (display-graphic-p))
-  (should-error (mod-test-canvas '(image :type canvas
-                                         :data-width 800
-                                         :data-height 600)
-                                 t))
-  (should-error (mod-test-canvas '(image :type canvas
-                                         :canvas-id mod-test)
+  (should-error (mod-test-canvas '(image :type canvas)
                                  t))
   (should-error (mod-test-canvas nil nil))
   (should-error (mod-test-canvas '(image :type xbm :data "") nil)))
