@@ -5510,22 +5510,27 @@ canvas_image_p (Lisp_Object object)
 /* Clear canvas list. All canvases which are not referenced anymore in
    canvas_map are freed.  */
 
-static void canvas_clear (void)
+static void
+canvas_clear (void)
 {
-    DOHASH (canvas_map, k, v)
-	((struct canvas *)XFIXNUMPTR (v))->used = 1;
+  DOHASH (canvas_map, k, v)
+    ((struct canvas *)XFIXNUMPTR (v))->used = 1;
 
-    struct canvas **p = &canvas_list;
-    while (*p) {
-	struct canvas *c = *p;
-	if (c->used) {
-	    p = &c->next;
-	    c->used = 0;
-	} else {
-	    *p = c->next;
-	    xfree (c->pixel);
-	    xfree (c);
+  struct canvas **p = &canvas_list;
+  while (*p)
+    {
+      struct canvas *c = *p;
+      if (c->used)
+        {
+	  p = &c->next;
+	  c->used = 0;
 	}
+      else
+	{
+	  *p = c->next;
+	  xfree (c->pixel);
+	  xfree (c);
+        }
     }
 }
 
@@ -5561,8 +5566,8 @@ canvas_apply_data (struct canvas *c, struct image_keyword *fmt,
     {
       if (ASIZE (data) != expected_size)
 	{
-	  image_error ("Canvas: :data size mismatch: expected %d bytes",
-		       make_fixnum (expected_bytes));
+	  image_error ("Canvas: :data size mismatch: expected vector size %d",
+		       make_fixnum (expected_size));
 	  return;
 	}
 
@@ -5605,7 +5610,8 @@ canvas_apply_data (struct canvas *c, struct image_keyword *fmt,
 
 /* Get canvas object for IMAGE specification. Return nil on error.  */
 
-static struct canvas* canvas_get (Lisp_Object image)
+static struct canvas*
+canvas_get (Lisp_Object image)
 {
   struct image_keyword fmt[CANVAS_LAST];
   memcpy (fmt, canvas_format, sizeof fmt);
@@ -5677,7 +5683,8 @@ canvas_load (struct frame *f, struct image *img)
 
 /* Prepare image IMG from canvas for display.  */
 
-static void canvas_prepare (struct frame *f, struct image *img)
+static void
+canvas_prepare (struct frame *f, struct image *img)
 {
   block_input ();
 
