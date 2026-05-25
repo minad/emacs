@@ -2282,14 +2282,11 @@ filter_image_spec (Lisp_Object spec)
 	  Lisp_Object value = XCAR (spec);
 	  spec = XCDR (spec);
 
-	  /* TODO: For canvas images we have to filter out the data
-             attribute, since the data vector may change. We want the
-             same hash value independent of the actual content of the
-             vector. The Fequal in search_image_cache succeeds anyway if
-             the vector object is EQ. */
-
 	  /* Some animation-related data doesn't affect display, but
-	     breaks the image cache.  Filter those out.  */
+	     breaks the image cache.  Furthermore for canvases do not
+	     check the data for equality, such that data can be changed
+	     via mutation to refresh the canvas. Filter these keys out.
+	     */
 	  if (!((is_canvas && EQ (key, QCdata))
 		|| EQ (key, QCanimate_buffer)
 		|| EQ (key, QCanimate_tardiness)
