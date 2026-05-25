@@ -2365,9 +2365,7 @@ clear_image_cache (struct frame *f, Lisp_Object filter)
 	 while being in an inconsistent state.  */
       block_input ();
 
-      /* TODO: Clear canvas_list here. Free all canvases from the
-         canvas_list that are not present anymore in the canvas_map.
-         canvas_map is a hash map with weak keys! */
+      canvas_clear ();
 
       if (!NILP (filter))
 	{
@@ -5450,7 +5448,7 @@ struct canvas
   /* Image spec */
   Lisp_Object spec;
   /* Incremented if the canvas should be redrawn */
-  int refresh;
+  uint32_t refresh;
   /* Dimension of the canvas */
   int width, height;
   /* Pinned pixel memory buffer in ARGB32 format */
@@ -5507,6 +5505,15 @@ canvas_image_p (Lisp_Object object)
   return parse_image_spec (object, fmt, CANVAS_LAST, Qcanvas);
 }
 
+/* Clear canvas list. All canvases which are not referenced anymore in
+   canvas_map are freed.  */
+
+static void canvas_clear (void)
+{
+    /* TODO: Walk over canvas_map with DOHASH, free all others.  Free
+       all canvases from the canvas_list that are not present anymore in
+       the canvas_map.  canvas_map is a hash map with weak keys! */
+}
 
 /* Copy pixel data into canvas C from a parsed image keyword array FMT.
    WIDTH and HEIGHT give the expected canvas dimensions.
@@ -5610,6 +5617,8 @@ static struct canvas* canvas_get (Lisp_Object image)
 
   if (!c)
     {
+      canvas_clear ();
+
       c = xzalloc (sizeof (struct canvas));
       c->spec = image;
       c->refresh = 1;
