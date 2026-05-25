@@ -5611,7 +5611,7 @@ static struct canvas* canvas_get (Lisp_Object image)
   memcpy (fmt, canvas_format, sizeof fmt);
   if (!parse_image_spec (image, fmt, CANVAS_LAST, Qcanvas))
     {
-      image_error ("Invalid canvas image specification");
+      image_error ("Not a canvas image specification");
       return 0;
     }
 
