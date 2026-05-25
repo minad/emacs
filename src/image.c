@@ -5758,7 +5758,8 @@ canvas_prepare_for_display (struct frame *f, struct image *img)
 
 /* Access canvas buffer. */
 
-uint32_t* canvas_pixel (Lisp_Object image)
+uint32_t*
+canvas_pixel (Lisp_Object image)
 {
   struct image_keyword fmt[CANVAS_LAST];
   struct canvas* c = canvas_get (image, fmt);
@@ -5771,19 +5772,18 @@ uint32_t* canvas_pixel (Lisp_Object image)
 
 /* TODO: Rename to memimage-redraw or image-redraw? However we support
    data reloading only for memimages. */
-DEFUN ("canvas-refresh",
-       Fcanvas_refresh,
-       Scanvas_refresh,
-       1, 2, 0,
+DEFUN ("canvas-refresh", Fcanvas_refresh, Scanvas_refresh, 1, 2, 0,
        doc: /* Refresh canvas IMAGE.
-	       If RELOAD-DATA is non-nil, reload the data.*/)
+If RELOAD-DATA is non-nil, reload the :data from the image specification.  */)
   (Lisp_Object image, Lisp_Object reload_data)
 {
   struct image_keyword fmt[CANVAS_LAST];
   struct canvas* c = canvas_get (image, fmt);
+
   if (!c)
     error ("Not a canvas");
 
+  /* Reload :data or :file from the image specification.  */
   if (!NILP (reload_data))
     canvas_apply_data (c, fmt);
 
@@ -5792,7 +5792,7 @@ DEFUN ("canvas-refresh",
   if (++c->refresh == 0)
     c->refresh = 1;
 
-  /* Redraw all glyphs.  */
+  /* Redraw all image glyphs.  */
   block_input ();
   redraw_image_glyphs (image);
   unblock_input ();
