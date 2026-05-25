@@ -1883,7 +1883,7 @@ prepare_image_for_display (struct frame *f, struct image *img)
   if (img->refresh
       && EQ (image_spec_value (img->spec, QCtype, NULL), Qcanvas)
       && img->refresh != XFIXNUMPTR (img->lisp_data))
-    canvas_prepare (f, img);
+    canvas_prepare_for_display (f, img);
 }
 
 
@@ -5510,14 +5510,16 @@ canvas_image_p (Lisp_Object object)
 }
 
 /* Clear canvas list. All canvases which are not referenced anymore in
-   canvas_map are freed.  */
+   the weak hash table canvas_map are freed.  */
 
 static void
 canvas_free_unused (void)
 {
+  /* Mark all referenced canvases as used.  */
   DOHASH (canvas_map, k, v)
     ((struct canvas *)XFIXNUMPTR (v))->used = 1;
 
+  /* Free unreferenced canvases and remove them from the list.  */
   struct canvas **p = &canvas_list;
   while (*p)
     {
@@ -5552,7 +5554,7 @@ canvas_apply_data (struct canvas *c, struct image_keyword *fmt)
   Lisp_Object data = fmt[CANVAS_DATA].value;
   Lisp_Object file = fmt[CANVAS_FILE].value;
 
-  if (STRINGP (data))
+  if (STRINGP (data)) /* Unibyte string data in ARGB32 format.  */
     {
       if (STRING_MULTIBYTE (data))
 	{
@@ -5569,7 +5571,7 @@ canvas_apply_data (struct canvas *c, struct image_keyword *fmt)
 
       memcpy (c->pixel, SDATA (data), expected_bytes);
     }
-  else if (VECTORP (data))
+  else if (VECTORP (data)) /* Vector of ARGB32 integers.  */
     {
       if (ASIZE (data) != expected_size)
 	{
@@ -5582,7 +5584,7 @@ canvas_apply_data (struct canvas *c, struct image_keyword *fmt)
       for (int i = 0; i < ASIZE (data); i++)
 	  c->pixel[i] = XFIXNUM (AREF (data, i));
     }
-  else if (STRINGP (file)) // else we load the :file
+  else if (STRINGP (file)) /* Binary file with ARGB32 data.  */
     {
       Lisp_Object found = image_find_image_file (file);
       if (!STRINGP (found))
@@ -5617,7 +5619,7 @@ canvas_apply_data (struct canvas *c, struct image_keyword *fmt)
     }
 }
 
-/* Get canvas object for IMAGE specification. Return nil on error.  */
+/* Get canvas object for IMAGE specification. Return NULL on error.  */
 
 static struct canvas*
 canvas_get (Lisp_Object image, struct image_keyword *fmt)
@@ -5642,7 +5644,8 @@ canvas_get (Lisp_Object image, struct image_keyword *fmt)
 
   if (!c)
     {
-      /* Free old canvases now, when allocating a new one, to keep memory usage low. */
+      /* Free old canvases now, when allocating a new one, to keep
+         memory usage low. */
       canvas_free_unused ();
 
       c = xzalloc (sizeof (struct canvas));
@@ -5693,7 +5696,7 @@ canvas_load (struct frame *f, struct image *img)
 /* Prepare image IMG from canvas for display.  */
 
 static void
-canvas_prepare (struct frame *f, struct image *img)
+canvas_prepare_for_display (struct frame *f, struct image *img)
 {
   block_input ();
 
