@@ -110,6 +110,11 @@ static unsigned long image_alloc_image_color (struct frame *, struct image *,
 # define DONT_CREATE_TRANSFORMED_IMAGEMAGICK_IMAGE
 #endif
 
+#ifdef HAVE_CANVAS
+static void
+canvas_prepare_for_display (struct frame *f, struct image *img);
+#endif
+
 #ifdef HAVE_NTGUI
 
 /* We need (or want) w32.h only when we're _not_ compiling for Cygwin.  */
@@ -3389,7 +3394,7 @@ image_set_transform (struct frame *f, struct image *img)
   if (EQ (image_spec_value (img->spec, QCtype, NULL), Qcanvas))
     cairo_filter = smoothing ? CAIRO_FILTER_GOOD : CAIRO_FILTER_NEAREST;
 #endif
-  cairo_pattern_set_filter (pattern, filter);
+  cairo_pattern_set_filter (pattern, cairo_filter);
 
   /* Dummy solid color pattern just to record pattern matrix.  */
   img->cr_data = pattern;
@@ -5516,7 +5521,7 @@ static void
 canvas_free_unused (void)
 {
   /* Mark all referenced canvases as used.  */
-  DOHASH (canvas_map, k, v)
+  DOHASH (XHASH_TABLE (canvas_map), k, v)
     ((struct canvas *)XFIXNUMPTR (v))->used = 1;
 
   /* Free unreferenced canvases and remove them from the list.  */
@@ -5635,7 +5640,7 @@ canvas_apply_data (struct canvas *c, struct image_keyword *fmt)
 static struct canvas*
 canvas_get (Lisp_Object image, struct image_keyword *fmt)
 {
-  memcpy (fmt, canvas_format, sizeof fmt);
+  memcpy (fmt, canvas_format, sizeof canvas_format);
   if (!parse_image_spec (image, fmt, CANVAS_LAST, Qcanvas))
     {
       image_error ("Not a canvas image specification");
