@@ -32839,12 +32839,6 @@ static void redraw_image_glyphs_window_1 (struct window *w, Lisp_Object spec)
 	  int start = row->x;
 	  for (int x = 0; x < row->used[TEXT_AREA]; ++x)
 	    {
-	      /* TODO: Check if some logic changes are needed here. Eli
-                 made some claims that the redrawing logic is fragile
-                 and that many special cases need to be handled. Gerd
-                 argued that one could also just wait for the next
-                 redisplay to correct glitches. In any case we should
-                 check. */
 	      struct glyph *glyph = row->glyphs[TEXT_AREA] + x;
 	      if (glyph->type == IMAGE_GLYPH)
 		{
@@ -32877,7 +32871,13 @@ void redraw_image_glyphs (Lisp_Object spec)
 {
   Lisp_Object tail, frame;
   FOR_EACH_FRAME (tail, frame)
-    redraw_image_glyphs_window (XWINDOW (XFRAME (frame)->root_window), spec);
+    {
+      /* When the frame is garbaged, wait for full redisplay.  Only use
+         the fast path when the frame is in a consistent state. */
+      struct frame* f = XFRAME (frame);
+      if (!FRAME_GARBAGED_P (f))
+        redraw_image_glyphs_window (XWINDOW (f->root_window), spec);
+    }
 }
 
 #endif	/* HAVE_WINDOW_SYSTEM */
