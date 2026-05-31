@@ -27,7 +27,7 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 /* TODO: Implement canvas support for more platforms. I think we need
    Windows and NS for it to be acceptable, since these guys participated
    in the discussion. */
-#if defined HAVE_X_WINDOWS || defined USE_CAIRO
+#if defined HAVE_X_WINDOWS || defined USE_CAIRO || defined HAVE_NTGUI || defined HAVE_NS
 #  define HAVE_CANVAS 1
 #endif
 
