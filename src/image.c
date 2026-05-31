@@ -5786,6 +5786,11 @@ canvas_prepare_for_display (struct frame *f, struct image *img)
       image_put_x_image (f, img, ximg, 0);
     }
 
+#elif defined HAVE_NS
+  for (int y = 0; y < height; ++y)
+    for (int x = 0; x < width; ++x)
+      PUT_PIXEL (img->pixmap, x, y, src[y * width + x]);
+
 #else
 # error Canvas not supported by the platform
 #endif
