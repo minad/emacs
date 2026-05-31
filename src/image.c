@@ -5765,6 +5765,11 @@ canvas_prepare_for_display (struct frame *f, struct image *img)
       gui_put_x_image (f, ximg, img->pixmap, width, height);
       x_destroy_x_image (ximg);
     }
+
+#elif defined HAVE_NTGUI
+
+  fprintf(stdout, "Compiling canvas on windows...");
+
 #else
 # error Canvas not supported by the platform
 #endif
