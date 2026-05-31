@@ -5777,11 +5777,11 @@ canvas_prepare_for_display (struct frame *f, struct image *img)
       for (int y = 0; y < height; ++y)
         for (int x = 0; x < width; ++x)
           {
-            uint32_t c = src[y * width + x];
-            PUT_PIXEL (ximg, x, y,
-                       RGB ((c >> 16) & 0xFF,
-                            (c >>  8) & 0xFF,
-			    c        & 0xFF));
+            uint32_t c = src[y * width + x],
+		     r = (c >> 16) & 255,
+		     g = (c >>  8) & 255,
+		     b = c        & 255;
+            PUT_PIXEL (ximg, x, y, RGB (r, g, b));
           }
       image_put_x_image (f, img, ximg, 0);
     }
