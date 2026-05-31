@@ -226,6 +226,7 @@ static unsigned long *colors_in_color_table (int *n);
 
 #ifdef HAVE_NTGUI
 static HBITMAP w32_create_pixmap_from_bitmap_data (int, int, char *);
+static void XPutPixel (XImage *, int, int, COLORREF);
 
 #endif
 
@@ -5767,8 +5768,23 @@ canvas_prepare_for_display (struct frame *f, struct image *img)
     }
 
 #elif defined HAVE_NTGUI
-
-  fprintf(stdout, "Compiling canvas on windows...");
+  FRAME_TERMINAL (f)->free_pixmap (f, img->pixmap);
+  img->pixmap = NO_PIXMAP;
+  Emacs_Pix_Container ximg;
+  if (image_create_x_image_and_pixmap_1 (f, width, height, 0,
+					 &ximg, &img->pixmap, NULL))
+    {
+      for (int y = 0; y < height; ++y)
+        for (int x = 0; x < width; ++x)
+          {
+            uint32_t c = src[y * width + x];
+            PUT_PIXEL (ximg, x, y,
+                       RGB ((c >> 16) & 0xFF,
+                            (c >>  8) & 0xFF,
+			    c        & 0xFF));
+          }
+      image_put_x_image (f, img, ximg, 0);
+    }
 
 #else
 # error Canvas not supported by the platform
