@@ -24,10 +24,6 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 
 #include "character.h"
 
-#if defined HAVE_X_WINDOWS || defined USE_CAIRO || defined HAVE_NTGUI || defined HAVE_NS
-#  define HAVE_CANVAS 1
-#endif
-
 #ifdef HAVE_X_WINDOWS
 
 #include <X11/Xlib.h>
@@ -3725,9 +3721,7 @@ extern void update_redisplay_ticks (int, struct window *);
 
 /* Defined in image.c */
 
-#ifdef HAVE_CANVAS
 extern uint32_t* canvas_pixel (Lisp_Object);
-#endif
 
 #ifdef HAVE_WINDOW_SYSTEM
 
