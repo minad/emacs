@@ -110,10 +110,7 @@ static unsigned long image_alloc_image_color (struct frame *, struct image *,
 # define DONT_CREATE_TRANSFORMED_IMAGEMAGICK_IMAGE
 #endif
 
-#ifdef HAVE_CANVAS
-static void
-canvas_prepare_for_display (struct frame *f, struct image *img);
-#endif
+static void canvas_prepare_for_display (struct frame *f, struct image *img);
 
 #ifdef HAVE_NTGUI
 
@@ -3388,13 +3385,13 @@ image_set_transform (struct frame *f, struct image *img)
   cairo_pattern_t *pattern = cairo_pattern_create_rgb (0, 0, 0);
   cairo_pattern_set_matrix (pattern, &cr_matrix);
 
-  int cairo_filter = smoothing ? CAIRO_FILTER_BEST : CAIRO_FILTER_NEAREST;
-#ifdef HAVE_CANVAS
   /* Performance degrades with CAIRO_FILTER_BEST when using canvas, and possibly
      we get HW acceleration from CAIRO_FILTER_GOOD */
+  int cairo_filter;
   if (EQ (image_spec_value (img->spec, QCtype, NULL), Qcanvas))
     cairo_filter = smoothing ? CAIRO_FILTER_GOOD : CAIRO_FILTER_NEAREST;
-#endif
+  else
+    cairo_filter = smoothing ? CAIRO_FILTER_BEST : CAIRO_FILTER_NEAREST
   cairo_pattern_set_filter (pattern, cairo_filter);
 
   /* Dummy solid color pattern just to record pattern matrix.  */
@@ -5441,8 +5438,6 @@ xbm_load (struct frame *f, struct image *img)
 
   return success_p;
 }
-
-#ifdef HAVE_CANVAS
 
 /***********************************************************************
 			      Canvas
@@ -5791,7 +5786,7 @@ canvas_prepare_for_display (struct frame *f, struct image *img)
     for (int x = 0; x < width; ++x)
       PUT_PIXEL (img->pixmap, x, y, src[y * width + x]);
 
-#elif dfined HAVE_ANDROID
+#elif defined HAVE_ANDROID
   struct android_image *ximg = android_create_image (FRAME_DISPLAY_INFO (f)->n_planes,
 						     ANDROID_Z_PIXMAP, NULL, width, height);
   if (ximg)
@@ -5805,6 +5800,7 @@ canvas_prepare_for_display (struct frame *f, struct image *img)
     }
 
 #else
+    /* TODO: Add other implementations? */
 # error Canvas not supported by the platform
 #endif
 
@@ -5855,7 +5851,6 @@ If RELOAD-DATA is non-nil, reload the :data from the image specification.  */)
   return Qnil;
 }
 
-#endif
 
 /***********************************************************************
 			      XPM images
