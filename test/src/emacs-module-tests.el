@@ -609,11 +609,17 @@ See Bug#36226."
 ;; TODO Test to load from data unibyte
 ;; TODO Test to load from data vector
 ;; TODO Test to load from file
-;; TODO Test to reload vector
+;; TODO Test to reload changed vector
 
-;; TODO Update https://github.com/minad/emacs-canvas-patch
-;; TODO Update https://github.com/minad/emacs-shader-demo
-;; TODO Update https://github.com/minad/doom-on-emacs
+;; TODO Add new canvas-master.diff to https://github.com/minad/emacs-canvas-patch
+;; TODO Add new canvas-31.diff to https://github.com/minad/emacs-canvas-patch
+;; (An Emacs 31 patch would help users running stable Emacs, and help
+;; Daniel since he is on upcoming stable and does not have the resources
+;; to switch to master right now or cannot take the risk.)
+
+;; TODO Test updated https://github.com/minad/emacs-canvas-patch
+;; TODO Test updated https://github.com/minad/emacs-shader-demo
+;; TODO Test updated https://github.com/minad/doom-on-emacs
 
 ;; TODO Add additional file/vector load and vector reload tests to
 ;; https://github.com/minad/emacs-canvas-patch
