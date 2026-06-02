@@ -965,11 +965,8 @@ module_vec_size (emacs_env *env, emacs_value vector)
 static uint32_t*
 module_canvas_pixel (emacs_env *env, emacs_value canvas)
 {
-  uint32_t* pixel = NULL;
   MODULE_FUNCTION_BEGIN (NULL);
-#ifdef HAVE_CANVAS
-  pixel = canvas_pixel (value_to_lisp (canvas));
-#endif
+  uint32_t* pixel = canvas_pixel (value_to_lisp (canvas));
   MODULE_INTERNAL_CLEANUP ();
   return pixel;
 }
