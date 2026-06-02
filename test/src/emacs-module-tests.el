@@ -611,7 +611,7 @@ See Bug#36226."
 ;; TODO Test to load from file
 ;; TODO Test to reload changed vector
 
-;; TODO Add new canvas-master.diff to https://github.com/minad/emacs-canvas-patch
+;; TODO Add new canvas-32.diff to https://github.com/minad/emacs-canvas-patch
 ;; TODO Add new canvas-31.diff to https://github.com/minad/emacs-canvas-patch
 ;; (An Emacs 31 patch would help users running stable Emacs, and help
 ;; Daniel since he is on upcoming stable and does not have the resources
