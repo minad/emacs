@@ -3391,7 +3391,7 @@ image_set_transform (struct frame *f, struct image *img)
   if (EQ (image_spec_value (img->spec, QCtype, NULL), Qcanvas))
     cairo_filter = smoothing ? CAIRO_FILTER_GOOD : CAIRO_FILTER_NEAREST;
   else
-    cairo_filter = smoothing ? CAIRO_FILTER_BEST : CAIRO_FILTER_NEAREST
+    cairo_filter = smoothing ? CAIRO_FILTER_BEST : CAIRO_FILTER_NEAREST;
   cairo_pattern_set_filter (pattern, cairo_filter);
 
   /* Dummy solid color pattern just to record pattern matrix.  */
