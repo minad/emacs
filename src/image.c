@@ -5581,18 +5581,15 @@ canvas_apply_data (struct canvas *c, struct image_keyword *fmt)
 	  return;
 	}
 
-      // TODO: FIXNUMP checks need to be added, before XFIXNUM
-      // Done (Divya): unsure about the error message.
-
       for (int i = 0; i < ASIZE (data); i++)
 	{
-	  if (FIXNUMP (AREF (data, i)))
-	    c->pixel[i] = XFIXNUM (AREF (data, i));
-	  else
+          Lisp_Object pixel = AREF (data, i);
+	  if (!FIXNUMP (pixel))
 	    {
-	      image_error ("Canvas: invalid image data in the vector.");
+	      image_error ("Canvas: expected fixnum in the vector");
 	      return;
 	    }
+	  c->pixel[i] = XFIXNUM (pixel);
 	}
     }
 
