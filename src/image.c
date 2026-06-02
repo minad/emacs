@@ -5796,9 +5796,8 @@ canvas_prepare_for_display (struct frame *f, struct image *img)
       image_destroy_x_image (ximg);
     }
 
-#else
-    /* TODO: Add other implementations? */
-# error Canvas not supported by the platform
+#elif defined HAVE_HAIKU
+    /* TODO: Add support */
 #endif
 
   unblock_input ();
