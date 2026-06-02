@@ -617,10 +617,6 @@ See Bug#36226."
 ;; Daniel since he is on upcoming stable and does not have the resources
 ;; to switch to master right now or cannot take the risk.)
 
-;; TODO Test updated https://github.com/minad/emacs-canvas-patch
-;; TODO Test updated https://github.com/minad/emacs-shader-demo
-;; TODO Test updated https://github.com/minad/doom-on-emacs
-
 ;; TODO Add additional file/vector load and vector reload tests to
 ;; https://github.com/minad/emacs-canvas-patch
 
