@@ -13407,11 +13407,9 @@ static struct image_type const image_types[] =
  { SYMBOL_INDEX (Qwebp), webp_image_p, webp_load, image_clear_image,
    IMAGE_TYPE_INIT (init_webp_functions) },
 #endif
-#if defined HAVE_CANVAS
-  { SYMBOL_INDEX (Qcanvas), canvas_image_p, canvas_load, image_clear_image },
-#endif
  { SYMBOL_INDEX (Qxbm), xbm_image_p, xbm_load, image_clear_image },
  { SYMBOL_INDEX (Qpbm), pbm_image_p, pbm_load, image_clear_image },
+ { SYMBOL_INDEX (Qcanvas), canvas_image_p, canvas_load, image_clear_image },
 };
 
 #if HAVE_NATIVE_IMAGE_API
@@ -13562,6 +13560,13 @@ non-numeric, there is no explicit limit on the size of images.  */);
 	);
 #endif
 
+  DEFSYM (Qcanvas, "canvas");
+  add_image_type (Qcanvas);
+
+  canvas_map = make_hash_table (&hashtest_eq, DEFAULT_HASH_SIZE, Weak_Key);
+  staticpro (&canvas_map);
+  defsubr (&Scanvas_refresh);
+
   DEFSYM (Qpbm, "pbm");
   add_image_type (Qpbm);
 
@@ -13609,15 +13614,6 @@ non-numeric, there is no explicit limit on the size of images.  */);
   if (image_can_use_native_api (Qwebp))
     add_image_type (Qwebp);
 #endif /* NS_IMPL_GNUSTEP && !HAVE_WEBP */
-#endif
-
-#if defined (HAVE_CANVAS)
-  DEFSYM (Qcanvas, "canvas");
-  add_image_type (Qcanvas);
-
-  canvas_map = make_hash_table (&hashtest_eq, DEFAULT_HASH_SIZE, Weak_Key);
-  staticpro (&canvas_map);
-  defsubr (&Scanvas_refresh);
 #endif
 
 #if defined (HAVE_IMAGEMAGICK)
