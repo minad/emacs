@@ -7489,9 +7489,22 @@ canvas} creates a canvas, for instance as follows:
           :data-height 600))
 @end lisp
 
-The image specification uniquely identifiers a canvas object.  The
+The image specification uniquely identifies a canvas image object.  The
 positive integer width and positive integer height of the canvas
 @code{:data-width} and @code{:data-height} are mandatory.
+
+Like other images, canvases can also be created via @code{create-image}
+via either providing ARGB32 data as unibyte string in @code{:data} or,
+by providing the path to a file containing the ARGB32 data in @code{:file}.
+
+So, the above canvas can also be created as follows:
+
+@lisp
+(setq my-canvas (create-image ``/path/to/file`
+                              'canvas nil
+                              :data-width 800
+                              :data-height 600))
+@end lisp
 
 Other image properties like @code{:scale}, @code{:margin},
 @code{:relief}, @code{:scale}, @code{:transform-smoothing} and
@@ -7505,6 +7518,18 @@ string or overlay:
 (overlay-put some-overlay 'display my-canvas)
 @end lisp
 
+Once a canvas image object has been created and displayed, it can be
+``refreshed` via @code{canvas-refresh}.  If additionally @code{:data}
+or @code{:file} changed in the specification of the canvas then an
+optional boolean argument can be passed to @code{canvas-refresh} can
+be pased to ensure that the new image data or file is loaded.
+
+The following code will refresh the canvas by reloading the data or file:
+
+@lisp
+(canvas-refresh my-canvas t)
+@end lisp
+
 The module function @code{canvas_pixel} gives access to the writable
 pixel buffer in ARGB32 format.  The buffer has size @var{width} *
 @var{height} and is organized in row-major order.  After drawing to the
@@ -7513,7 +7538,7 @@ pixel buffer, redraw the canvas with a call to @code{canvas-refresh}.
 modules and how to use this functionality in them.
 
 @node Image Cache
-@subsection Image Cache
+n@subsection Image Cache
 @cindex image cache
 
   Emacs caches images so that it can display them again more
