@@ -1117,6 +1117,7 @@ option.  @xref{Initial Options,,,emacs, The GNU Emacs Manual}.
 * Module Functions::
 * Module Values::
 * Module Misc::
+* Module Canvas API::
 * Module Nonlocal::
 @end menu
 
@@ -2020,7 +2021,7 @@ done, close the file descriptor using @code{close}.  @ref{Low-Level
 I/O,,,libc}.
 @end deftypefun
 
-@node Module Misc
+@node Module Canvas API
 @subsection Using Canvas API With Modules
 
 Emacs supports creating image objects called ``canvas'' which have a
