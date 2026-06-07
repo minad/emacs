@@ -7531,11 +7531,8 @@ The following code will refresh the canvas by reloading the data or file:
 (canvas-refresh my-canvas t)
 @end lisp
 
-The module function @code{canvas_pixel} gives access to the writable
-pixel buffer in ARGB32 format.  The buffer has size @var{width} *
-@var{height} and is organized in row-major order.  After drawing to the
-pixel buffer, redraw the canvas with a call to @code{canvas-refresh}.
-@xref{Writing Dynamic Modules} for details regarding dynamic
+Canvas images can be manipulated and refreshed via dynamic modules.
+@xref{Module Canvas API} for details regarding dynamic
 modules and how to use this functionality in them.
 
 @node Image Cache
