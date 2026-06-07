@@ -7479,8 +7479,10 @@ if there is one.
 Canvas images have an associated writeable ARGB32 pixel buffer.  They
 can be used by dynamic modules to efficiently display and update images,
 for example by document viewers, visualization tools, dynamically
-computed animations or games.  An image specifier with @code{:type
-canvas} creates a canvas, for instance as follows:
+computed animations or games.
+
+An image specifier with @code{:type canvas} creates a canvas, for instance
+as follows:
 
 @lisp
 (defvar my-canvas
