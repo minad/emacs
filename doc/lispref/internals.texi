@@ -2025,9 +2025,11 @@ I/O,,,libc}.
 @subsection Using Canvas API With Modules
 
 Emacs supports creating image objects called ``canvas'' which have a
-pixel buffer associated to them that can be accessed via dynamic
-modules.  @xref{Canvas Images} explains what they are, here we see how
-to use them from dynamic modules.
+ARGB32 pixel buffer associated to them. These image objects  can be
+accessed and updated natively via dynamic modules.  @xref{Canvas Images}
+for what they are.
+
+The following functions allow you to operate on canvas image objects with dynamic modules:
 
 @anchor{canvas_pixel}
 @deftypefn Function uint32_t *canvas_pixel (emacs_env *@var{env}, emacs_value @var{canvas})
