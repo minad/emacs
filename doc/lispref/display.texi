@@ -7536,8 +7536,7 @@ The following code will refresh the canvas by reloading the data or file:
 @end lisp
 
 Canvas images can be manipulated and refreshed via dynamic modules.
-@xref{Module Canvas API} for details regarding dynamic
-modules and how to use this functionality in them.
+@xref{Module Canvas API} for further details.
 
 @node Image Cache
 @subsection Image Cache
