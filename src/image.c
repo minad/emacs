@@ -111,6 +111,7 @@ static unsigned long image_alloc_image_color (struct frame *, struct image *,
 #endif
 
 static void canvas_prepare_for_display (struct frame *f, struct image *img);
+static void canvas_free_unused (void);
 
 #ifdef HAVE_NTGUI
 
@@ -2354,8 +2355,6 @@ free_image_cache (struct frame *f)
    Should be called from time to time to reduce the number of loaded images.
    If image-cache-eviction-delay is non-nil, this frees images in the cache
    which weren't displayed for at least that many seconds.  */
-
-static void canvas_free_unused (void);
 
 void
 clear_image_cache (struct frame *f, Lisp_Object filter)
