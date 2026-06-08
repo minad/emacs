@@ -635,7 +635,13 @@ See Bug#36226."
                                      :data ,string-data)
                              t))))
 
-;; TODO Test to load from file
+(ert-deftest mod-test-canvas/file ()
+  (skip-unless (display-graphic-p))
+  (let ((test-canvas (create-image "../data/image/canvas-argb"
+                                   'canvas
+                                   nil :data-width 100 :data-height 100)))
+    (should (mod-test-canvas test-canvas
+                             t))))
 
 ;; TODO Add new canvas-32.diff to https://github.com/minad/emacs-canvas-patch
 ;; TODO Add new canvas-31.diff to https://github.com/minad/emacs-canvas-patch
