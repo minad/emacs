@@ -627,11 +627,13 @@ See Bug#36226."
 
 (ert-deftest mod-test-canvas/unibyte ()
   (skip-unless (display-graphic-p))
-  (should (mod-test-canvas `(image :type canvas
-                                   :data-width 1
-                                   :data-height 1
-                                   :data ,(unibyte-string #xFF #x80 #x40 #x20))
-                           t)))
+  (let* ((pixel (unibyte-string #xFF #x80 #x40 #x80))
+         (string-data (apply #'concat (make-list (* 800 600) pixel))))
+    (should (mod-test-canvas `(image :type canvas
+                                     :data-width 800
+                                     :data-height 600
+                                     :data ,string-data)
+                             t))))
 
 ;; TODO Test to load from file
 
