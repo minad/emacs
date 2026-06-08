@@ -608,6 +608,14 @@ See Bug#36226."
 
 ;; TODO Test to load from data unibyte
 ;; TODO Test to load from data vector
+(ert-deftest mod-test-canvas/vector ()
+  (skip-unless (image-type-available-p 'canvas))
+  (skip-unless (display-graphic-p))
+  (should (mod-test-canvas `(image :type canvas
+                                   :data-width 800
+                                   :data-height 600
+                                   :data ,(make-vector (* 800 600) #xFFFF0000))
+                                 t)))
 ;; TODO Test to load from file
 ;; TODO Test to reload changed vector
 
