@@ -604,15 +604,14 @@ See Bug#36226."
   (should-error (mod-test-canvas nil nil))
   (should-error (mod-test-canvas '(image :type xbm :data "") nil)))
 
-;; TODO Test to load from data unibyte
-;; TODO Test to load from data vector
 (ert-deftest mod-test-canvas/vector ()
   (skip-unless (display-graphic-p))
   (should (mod-test-canvas `(image :type canvas
                                    :data-width 800
                                    :data-height 600
                                    :data ,(make-vector (* 800 600) #xFFFF0000))
-                                 t)))
+                           t)))
+
 (ert-deftest mod-test-canvas/vector-reload ()
   (skip-unless (display-graphic-p))
   (let* ((test-vector (make-vector (* 800 600) #xFFFF0000))
@@ -626,8 +625,15 @@ See Bug#36226."
     (should (mod-test-canvas test-canvas
                              t))))
 
+(ert-deftest mod-test-canvas/unibyte ()
+  (skip-unless (display-graphic-p))
+  (should (mod-test-canvas `(image :type canvas
+                                   :data-width 1
+                                   :data-height 1
+                                   :data ,(unibyte-string #xFF #x80 #x40 #x20))
+                           t)))
+
 ;; TODO Test to load from file
-;; TODO Test to reload changed vector
 
 ;; TODO Add new canvas-32.diff to https://github.com/minad/emacs-canvas-patch
 ;; TODO Add new canvas-31.diff to https://github.com/minad/emacs-canvas-patch
