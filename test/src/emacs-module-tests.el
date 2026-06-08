@@ -616,6 +616,20 @@ See Bug#36226."
                                    :data-height 600
                                    :data ,(make-vector (* 800 600) #xFFFF0000))
                                  t)))
+(ert-deftest mod-test-canvas/vector-reload ()
+  (skip-unless (image-type-available-p 'canvas))
+  (skip-unless (display-graphic-p))
+  (let* ((test-vector (make-vector (* 800 600) #xFFFF0000))
+         (test-canvas `(image :type canvas
+                              :data-height 600
+                              :data-width 800
+                              :data ,test-vector)))
+    (dotimes (i 100)
+      (aset test-vector i #xFFFFFFFF))
+    (canvas-refresh test-canvas t)
+    (should (mod-test-canvas test-canvas
+                             t))))
+
 ;; TODO Test to load from file
 ;; TODO Test to reload changed vector
 
