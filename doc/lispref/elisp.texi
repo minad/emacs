@@ -1577,7 +1577,7 @@ Images
 * Showing Images::          Convenient ways to display an image once
                               it is defined.
 * Multi-Frame Images::      Some images contain more than one frame.
-* Canvas Images::           Images backed by a writable ARGB32 memory buffer.
+* Canvas Images::           Easily modifiable image format with an ARGB32 pixel buffer.
 * Image Cache::             Internal mechanisms of image display.
 
 Buttons
