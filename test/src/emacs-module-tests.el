@@ -591,7 +591,6 @@ See Bug#36226."
 ;;; Canvas tests
 
 (ert-deftest mod-test-canvas/valid ()
-  (skip-unless (image-type-available-p 'canvas))
   (skip-unless (display-graphic-p))
   (should (mod-test-canvas '(image :type canvas
                                    :data-width 800
@@ -599,7 +598,6 @@ See Bug#36226."
                            t)))
 
 (ert-deftest mod-test-canvas/invalid ()
-  (skip-unless (image-type-available-p 'canvas))
   (skip-unless (display-graphic-p))
   (should-error (mod-test-canvas '(image :type canvas)
                                  t))
@@ -609,7 +607,6 @@ See Bug#36226."
 ;; TODO Test to load from data unibyte
 ;; TODO Test to load from data vector
 (ert-deftest mod-test-canvas/vector ()
-  (skip-unless (image-type-available-p 'canvas))
   (skip-unless (display-graphic-p))
   (should (mod-test-canvas `(image :type canvas
                                    :data-width 800
@@ -617,7 +614,6 @@ See Bug#36226."
                                    :data ,(make-vector (* 800 600) #xFFFF0000))
                                  t)))
 (ert-deftest mod-test-canvas/vector-reload ()
-  (skip-unless (image-type-available-p 'canvas))
   (skip-unless (display-graphic-p))
   (let* ((test-vector (make-vector (* 800 600) #xFFFF0000))
          (test-canvas `(image :type canvas
