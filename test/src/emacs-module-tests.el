@@ -624,7 +624,7 @@ See Bug#36226."
                               :data ,test-vector)))
     ;; TODO check returned hash value here
     (should (mod-test-canvas test-canvas
-                             t))))
+                             t))
     (dotimes (i 50)
       (aset test-vector i #xFFFFFFFF))
     (canvas-refresh test-canvas t)
