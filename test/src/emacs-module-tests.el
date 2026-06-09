@@ -592,6 +592,7 @@ See Bug#36226."
 
 (ert-deftest mod-test-canvas/valid ()
   (skip-unless (display-graphic-p))
+  ;; TODO check returned hash value here
   (should (mod-test-canvas '(image :type canvas
                                    :data-width 100
                                    :data-height 100)
@@ -604,8 +605,10 @@ See Bug#36226."
   (should-error (mod-test-canvas nil nil))
   (should-error (mod-test-canvas '(image :type xbm :data "") nil)))
 
+;; TODO add vector test where sizes are incorrect, can we check for the error?
 (ert-deftest mod-test-canvas/vector ()
   (skip-unless (display-graphic-p))
+    ;; TODO check returned hash value here
   (should (mod-test-canvas `(image :type canvas
                                    :data-width 100
                                    :data-height 100
@@ -619,34 +622,39 @@ See Bug#36226."
                               :data-height 100
                               :data-width 100
                               :data ,test-vector)))
+    ;; TODO check returned hash value here
+    (should (mod-test-canvas test-canvas
+                             t))))
     (dotimes (i 50)
       (aset test-vector i #xFFFFFFFF))
     (canvas-refresh test-canvas t)
+    ;; TODO check returned hash value here
     (should (mod-test-canvas test-canvas
                              t))))
 
+;; TODO add unibyte test where sizes are incorrect, can we check for the error?
 (ert-deftest mod-test-canvas/unibyte ()
   (skip-unless (display-graphic-p))
   (let* ((pixel (unibyte-string #xFF #x80 #x40 #x80))
          (string-data (apply #'concat (make-list (* 100 100) pixel))))
+    ;; TODO check returned hash value here
     (should (mod-test-canvas `(image :type canvas
                                      :data-width 100
                                      :data-height 100
                                      :data ,string-data)
                              t))))
 
+;; TODO add file test where sizes are incorrect, can we check for the error?
 (ert-deftest mod-test-canvas/file ()
   (skip-unless (display-graphic-p))
   (let ((test-canvas (create-image "../data/image/canvas-argb"
                                    'canvas
                                    nil :data-width 100 :data-height 100)))
+    ;; TODO check returned hash value here
     (should (mod-test-canvas test-canvas
                              t))))
 
 ;; TODO Add new canvas-32.diff to https://github.com/minad/emacs-canvas-patch
 ;; TODO Add new canvas-31.diff to https://github.com/minad/emacs-canvas-patch
-;; (An Emacs 31 patch would help users running stable Emacs, and help
-;; Daniel since he is on upcoming stable and does not have the resources
-;; to switch to master right now or cannot take the risk.)
 
 ;;; emacs-module-tests.el ends here

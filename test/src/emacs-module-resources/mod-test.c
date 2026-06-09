@@ -772,6 +772,8 @@ Fmod_test_canvas (emacs_env *env, ptrdiff_t nargs,
     {
       assert (!env->canvas_pixel (env, args[0]));
     }
+  // TODO What about computing a hash value from all the pixels here and returning that value?
+  // This way we can check that the pixels have been changed correctly.
   return env->intern (env, "t");
 }
 
