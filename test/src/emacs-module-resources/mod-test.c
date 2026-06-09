@@ -752,6 +752,11 @@ Fmod_test_make_string (emacs_env *env, ptrdiff_t nargs,
   return ret;
 }
 
+// TODO: Instead of Fmod_test_canvas we should maybe write three functions
+// TODO: Fmod_test_canvas_read (computes hash)
+// TODO: Fmod_test_canvas_write (writes all pixels, e.g., inverts them)
+// TODO: Fmod_test_canvas_invalid (checks that canvas_pixel is nil for given invalid canvas)
+
 static emacs_value
 Fmod_test_canvas (emacs_env *env, ptrdiff_t nargs,
 		  emacs_value *args, void *data)
