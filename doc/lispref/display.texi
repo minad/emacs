@@ -7492,13 +7492,13 @@ as follows:
 @end lisp
 
 The image specification uniquely identifies a canvas image object.  The
-positive integer width and positive integer height of the canvas
-@code{:data-width} and @code{:data-height} are mandatory.
+properties @code{:data-width} and @code{:data-height} are mandatory, and
+both must be positive integers.
 
 Like other images, canvases can also be created via @code{create-image}
-via either providing ARGB32 data as a fixnum vector or unibyte string in
-@code{:data} or by providing the path to a file containing the ARGB32
-data in @code{:file}.
+by either providing ARGB32 data as a fixnum vector or as an unibyte string
+in @code{:data}.  Path to a file containing the ARGB32 data in @code{:file}
+can also be provided.
 
 So, the above canvas can also be created as follows:
 
@@ -7509,9 +7509,9 @@ So, the above canvas can also be created as follows:
                               :data-height 600))
 @end lisp
 
-Other image properties like @code{:scale}, @code{:margin},
-@code{:relief}, @code{:scale}, @code{:transform-smoothing} and
-@code{:map} are supported.
+Other image properties like @code{:scale}, @code{:margin}, @code{:relief},
+@code{:transform-smoothing} and @code{:map} are supported.
+@xref{Image Descriptors} for further details on these properties.
 
 In order to display the canvas, specify it as display property of a
 string or overlay:
