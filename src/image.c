@@ -110,6 +110,21 @@ static unsigned long image_alloc_image_color (struct frame *, struct image *,
 # define DONT_CREATE_TRANSFORMED_IMAGEMAGICK_IMAGE
 #endif
 
+struct canvas
+{
+  union vectorlike_header header;
+  /* Linked list of canvases */
+  struct canvas *next;
+  /* Is the canvas used? */
+  bool used;
+  /* Incremented if the canvas should be redrawn. Always larger than 0. */
+  uint32_t refresh;
+  /* Dimension of the canvas */
+  int width, height;
+  /* Pinned pixel memory buffer in ARGB32 format */
+  uint32_t *pixel;
+};
+
 static void canvas_prepare_for_display (struct frame *f, struct image *img);
 static void canvas_free_unused (void);
 
@@ -5443,21 +5458,6 @@ xbm_load (struct frame *f, struct image *img)
  ***********************************************************************/
 
 /* TODO: Rename canvas to memimage or pixbuf. */
-
-struct canvas
-{
-  union vectorlike_header header;
-  /* Linked list of canvases */
-  struct canvas *next;
-  /* Is the canvas used? */
-  bool used;
-  /* Incremented if the canvas should be redrawn. Always larger than 0. */
-  uint32_t refresh;
-  /* Dimension of the canvas */
-  int width, height;
-  /* Pinned pixel memory buffer in ARGB32 format */
-  uint32_t *pixel;
-};
 
 /* Indices of image specification fields in canvas_format, below.  */
 
