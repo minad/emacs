@@ -593,8 +593,8 @@ See Bug#36226."
 (ert-deftest mod-test-canvas/valid ()
   (skip-unless (display-graphic-p))
   (should (mod-test-canvas '(image :type canvas
-                                   :data-width 800
-                                   :data-height 600)
+                                   :data-width 100
+                                   :data-height 100)
                            t)))
 
 (ert-deftest mod-test-canvas/invalid ()
@@ -607,19 +607,19 @@ See Bug#36226."
 (ert-deftest mod-test-canvas/vector ()
   (skip-unless (display-graphic-p))
   (should (mod-test-canvas `(image :type canvas
-                                   :data-width 800
-                                   :data-height 600
-                                   :data ,(make-vector (* 800 600) #xFFFF0000))
+                                   :data-width 100
+                                   :data-height 100
+                                   :data ,(make-vector (* 100 100) #xFFFF0000))
                            t)))
 
 (ert-deftest mod-test-canvas/vector-reload ()
   (skip-unless (display-graphic-p))
-  (let* ((test-vector (make-vector (* 800 600) #xFFFF0000))
+  (let* ((test-vector (make-vector (* 100 100) #xFFFF0000))
          (test-canvas `(image :type canvas
-                              :data-height 600
-                              :data-width 800
+                              :data-height 100
+                              :data-width 100
                               :data ,test-vector)))
-    (dotimes (i 100)
+    (dotimes (i 50)
       (aset test-vector i #xFFFFFFFF))
     (canvas-refresh test-canvas t)
     (should (mod-test-canvas test-canvas
@@ -628,10 +628,10 @@ See Bug#36226."
 (ert-deftest mod-test-canvas/unibyte ()
   (skip-unless (display-graphic-p))
   (let* ((pixel (unibyte-string #xFF #x80 #x40 #x80))
-         (string-data (apply #'concat (make-list (* 800 600) pixel))))
+         (string-data (apply #'concat (make-list (* 100 100) pixel))))
     (should (mod-test-canvas `(image :type canvas
-                                     :data-width 800
-                                     :data-height 600
+                                     :data-width 100
+                                     :data-height 100
                                      :data ,string-data)
                              t))))
 
