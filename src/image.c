@@ -1886,7 +1886,7 @@ prepare_image_for_display (struct frame *f, struct image *img)
      For canvases the refresh counter is always >= 1. */
   if (img->refresh
       && EQ (image_spec_value (img->spec, QCtype, NULL), Qcanvas)
-      && img->refresh != XFIXNUMPTR (img->lisp_data))
+      && img->refresh != ((struct canvas *) XFIXNUMPTR (img->lisp_data))->refresh)
     canvas_prepare_for_display (f, img);
 }
 
