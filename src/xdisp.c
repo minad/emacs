@@ -32826,10 +32826,16 @@ append_stretch_glyph (struct it *it, Lisp_Object object,
 
 static void redraw_image_glyphs_window_1 (struct window *w, Lisp_Object spec)
 {
-  if (!w->current_matrix)
+  if (w->current_matrix == NULL)
     return;
 
   struct frame* f = WINDOW_XFRAME (w);
+
+  if (w->must_be_updated_p)
+    {
+      SET_FRAME_GARBAGED (f);
+      return;
+    }
 
   for (int y = 0; y < w->current_matrix->nrows; ++y)
     {
