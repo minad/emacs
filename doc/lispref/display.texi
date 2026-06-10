@@ -7528,8 +7528,8 @@ string or overlay:
 Once a canvas image object has been created and displayed, it can be
 ``refreshed'' via @code{canvas-refresh}.  Additionally, if the
 @code{:data} vector was mutated or the @code{:file} content has changed
-then an optional non-nil argument passed to @code{canvas-refresh} will
-ensure that the image data is reloaded.
+then an optional non-@code{nil} argument passed to @code{canvas-refresh}
+will ensure that the image data is reloaded.
 
 The following code will refresh the canvas by reloading the data or file:
 
