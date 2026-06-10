@@ -657,6 +657,10 @@ See Bug#36226."
     (should (mod-test-canvas test-canvas
                              t))))
 
+;; TODO add test which creates a bunch of canvases, calls gc, creates
+;; another bunch of canvases, and so on, to make sure that the canvas
+;; freeing works correctly and doesn't crash.
+
 ;; TODO Add new canvas-32.diff to https://github.com/minad/emacs-canvas-patch
 ;; TODO Add new canvas-31.diff to https://github.com/minad/emacs-canvas-patch
 
