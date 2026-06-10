@@ -2039,23 +2039,27 @@ The pointer will be valid as long as the object @var{canvas} is alive.
 @end deftypefn
 
 Once we update the canvas pixel buffer via dynamic modules, we also have
-to call @code{canvas-refresh} for Emacs to load the newly updated data
-into the canvas.  This can be done from the module via an Elisp funcall.
+to call @code{canvas-refresh} for Emacs to redisplay the canvas.  This
+can be done from the module via an Elisp funcall.
 
 @example
+/* Access the pixel buffer */
 uint32_t *pixel = env->canvas_pixel (env, canvas);
 /* Write to the pixel buffer */
+...
+/* Redraw the canvas */
 env->funcall(env, env->intern(env, "canvas-refresh"), 1, &canvas);
 @end example
 
-Note that @code{canvas-refresh} has an optional boolean argument which,
-if non-@code{nil}, will reload the data before refreshing the canvas. When using
-from dynamic modules, it should always be @code{nil}, thus not provided.
+Note that @code{canvas-refresh} has an optional boolean argument to
+reload the @code{:data} from the canvas image specification.  When
+called from dynamic modules, the argument should usually be @code{nil},
+thus not provided.
 
 Thus, one can simply define a module function that takes as an argument
 a canvas image object, following the specification as laid down in
-@xref{Canvas Images} and then use the above function to manipulate the
-pixel buffer of the canvas and update it.
+@xref{Canvas Images} and then use the above code to manipulate the pixel
+buffer of the canvas and redraw it.
 
 @node Module Nonlocal
 @subsection Nonlocal Exits in Modules
