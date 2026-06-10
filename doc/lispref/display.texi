@@ -7522,10 +7522,10 @@ string or overlay:
 @end lisp
 
 Once a canvas image object has been created and displayed, it can be
-``refreshed'' via @code{canvas-refresh}.  Additionally, if @code{:data}
-or @code{:file} changed in the specification of the canvas then an
-optional boolean argument can be provided to @code{canvas-refresh} to
-ensure that the new image data or file is loaded.
+``refreshed'' via @code{canvas-refresh}.  Additionally, if the
+@code{:data} vector was mutated or the @code{:file} content has changed
+then an optional non-nil argument passed to @code{canvas-refresh} will
+ensure that the image data is reloaded.
 
 The following code will refresh the canvas by reloading the data or file:
 
