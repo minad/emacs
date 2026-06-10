@@ -32783,6 +32783,8 @@ static void redraw_image_glyphs_window (struct window *w, Lisp_Object spec)
     }
 }
 
+/* TODO: We have to follow a similar code path as for the Expose and Graphics event in xterm.c.
+   GraphicsExpose event -> expose_frame -> expose_window -> expose_line -> expose_area -> draw_glyphs */
 void redraw_image_glyphs (Lisp_Object spec)
 {
   Lisp_Object tail, frame;
