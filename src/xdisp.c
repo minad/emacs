@@ -32824,7 +32824,7 @@ append_stretch_glyph (struct it *it, Lisp_Object object,
     IT_EXPAND_MATRIX_WIDTH (it, area);
 }
 
-static void redraw_image_glyphs_window_1 (struct window *w, Lisp_Object spec)
+static void redraw_image_glyphs_window (struct window *w, Lisp_Object spec)
 {
   if (w->current_matrix == NULL)
     return;
@@ -32861,20 +32861,22 @@ static void redraw_image_glyphs_window_1 (struct window *w, Lisp_Object spec)
     }
 }
 
-static void redraw_image_glyphs_window (struct window *w, Lisp_Object spec)
+static void redraw_image_glyphs_window_tree (struct window *w, Lisp_Object spec)
 {
   while (w)
     {
       if (WINDOWP (w->contents))
-	redraw_image_glyphs_window (XWINDOW (w->contents), spec);
+	redraw_image_glyphs_window_tree (XWINDOW (w->contents), spec);
       else
-	redraw_image_glyphs_window_1 (w, spec);
+	redraw_image_glyphs_window (w, spec);
       w = NILP (w->next) ? NULL : XWINDOW (w->next);
     }
 }
 
-/* TODO: We have to follow a similar code path as for the Expose and Graphics event in xterm.c.
-   GraphicsExpose event -> expose_frame -> expose_window -> expose_line -> expose_area -> draw_glyphs */
+/* TODO: We have to follow a similar code path as for the Expose and
+   Graphics event in xterm.c.  GraphicsExpose event -> expose_frame ->
+   expose_window_tree -> expose_window -> expose_line -> expose_area ->
+   draw_glyphs */
 void redraw_image_glyphs (Lisp_Object spec)
 {
   Lisp_Object tail, frame;
@@ -32884,7 +32886,7 @@ void redraw_image_glyphs (Lisp_Object spec)
          the fast path when the frame is in a consistent state. */
       struct frame* f = XFRAME (frame);
       if (!FRAME_GARBAGED_P (f))
-        redraw_image_glyphs_window (XWINDOW (f->root_window), spec);
+        redraw_image_glyphs_window_tree (XWINDOW (f->root_window), spec);
     }
 }
 
