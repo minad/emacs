@@ -5833,10 +5833,12 @@ If RELOAD-DATA is non-nil, reload the :data from the image specification.  */)
   if (++c->refresh == 0)
     c->refresh = 1;
 
+#ifdef HAVE_WINDOW_SYSTEM
   /* Redraw all image glyphs.  */
   block_input ();
   redraw_image_glyphs (image);
   unblock_input ();
+#endif
 
   return Qnil;
 }
