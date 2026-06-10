@@ -5457,8 +5457,6 @@ xbm_load (struct frame *f, struct image *img)
 			      Canvas
  ***********************************************************************/
 
-/* TODO: Rename canvas to memimage or pixbuf. */
-
 /* Indices of image specification fields in canvas_format, below.  */
 
 enum canvas_keyword_index
@@ -5816,8 +5814,6 @@ canvas_pixel (Lisp_Object image)
   return c->pixel;
 }
 
-/* TODO: Rename to memimage-redraw or image-redraw? However we support
-   data reloading only for memimages. */
 DEFUN ("canvas-refresh", Fcanvas_refresh, Scanvas_refresh, 1, 2, 0,
        doc: /* Refresh canvas IMAGE.
 If RELOAD-DATA is non-nil, reload the :data from the image specification.  */)
