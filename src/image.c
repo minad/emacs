@@ -112,7 +112,6 @@ static unsigned long image_alloc_image_color (struct frame *, struct image *,
 
 struct canvas
 {
-  union vectorlike_header header;
   /* Linked list of canvases */
   struct canvas *next;
   /* Is the canvas used? */
