@@ -590,6 +590,9 @@ See Bug#36226."
 
 ;;; Canvas tests
 
+;; TODO Do we have to remove the display-graphic-p checks now? The tests
+;; work always, so we can remove, right?
+
 (ert-deftest mod-test-canvas/valid ()
   (skip-unless (display-graphic-p))
   ;; TODO check returned hash value here
