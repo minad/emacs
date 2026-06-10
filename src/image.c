@@ -5837,6 +5837,12 @@ If RELOAD-DATA is non-nil, reload the :data from the image specification.  */)
   /* Redraw all image glyphs.  */
   block_input ();
   redraw_image_glyphs (image);
+  /* TODO: Understand why we don't need to call flush_frame for each
+     modified frame. flush_frame calls rif->flush_display ->
+     x_flip_and_flush -> show_back_buffer and x_flush. In particular, we
+     don't flip the double buffer here. Why does it work nevertheless?
+     Is flush_fame or show_back_buffer called somewhere else, such that
+     we don't have to call it now? */
   unblock_input ();
 #endif
 
