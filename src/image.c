@@ -5654,7 +5654,7 @@ canvas_get (Lisp_Object image, struct image_keyword *fmt)
       canvas_free_unused ();
 
       c = xzalloc (sizeof (struct canvas));
-      c->refresh = 1;
+      c->refresh = 2;
       c->width = width;
       c->height = height;
       c->pixel = xzalloc (4 * width * height);
