@@ -5814,8 +5814,22 @@ canvas_pixel (Lisp_Object image)
 }
 
 DEFUN ("canvas-refresh", Fcanvas_refresh, Scanvas_refresh, 1, 2, 0,
-       doc: /* Refresh canvas IMAGE.
-If RELOAD-DATA is non-nil, reload the :data from the image specification.  */)
+       doc: /* Refresh canvas IMAGE and update it on screen.
+
+If RELOAD-DATA is non-nil, reload the :data from the image
+specification.
+
+`redisplay' must be called after `canvas-refresh' such that the updated
+canvas is displayed even if double buffering is enabled, for example
+when a canvas is updated in a loop:
+
+  (dotimes (i 100)
+    (aset (plist-get (cdr canvas) :data) i #xFF)
+    (canvas-refresh canvas 'reload-data)
+    (redisplay))
+
+When `canvas-refresh' is called from a timer or a command, `redisplay'
+will be called implicitly after the timer or command.  */)
   (Lisp_Object image, Lisp_Object reload_data)
 {
   struct image_keyword fmt[CANVAS_LAST];
@@ -5837,12 +5851,10 @@ If RELOAD-DATA is non-nil, reload the :data from the image specification.  */)
   /* Redraw all image glyphs.  */
   block_input ();
   redraw_image_glyphs (image);
-  /* TODO: Understand why we don't need to call flush_frame for each
-     modified frame. flush_frame calls rif->flush_display ->
-     x_flip_and_flush -> show_back_buffer and x_flush. In particular, we
-     don't flip the double buffer here. Why does it work nevertheless?
-     Is flush_fame or show_back_buffer called somewhere else, such that
-     we don't have to call it now? */
+  /* We do not call `redisplay' or `flush_frame' here. This means the
+     canvas images are not updated immediately on screen, since the
+     double buffer won't be flipped immediately.  The next call to
+     `redisplay' will flip the double buffer.  */
   unblock_input ();
 #endif
 
