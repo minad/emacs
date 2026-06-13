@@ -5754,8 +5754,10 @@ canvas_prepare_for_display (struct frame *f, struct image *img)
       gui_put_x_image (f, ximg, img->pixmap, width, height);
       x_destroy_x_image (ximg);
     }
-
 #elif defined HAVE_NTGUI
+  /* TODO: Can we avoid recreating the pixmap here, and instead create
+     an image and use gui_put_x_image to load it into the pixmap? See
+     the HAVE_X_WINDOWS and the HAVE_ANDROID port. */
   FRAME_TERMINAL (f)->free_pixmap (f, img->pixmap);
   img->pixmap = NO_PIXMAP;
   Emacs_Pix_Container ximg;
@@ -5773,12 +5775,11 @@ canvas_prepare_for_display (struct frame *f, struct image *img)
           }
       image_put_x_image (f, img, ximg, 0);
     }
-
 #elif defined HAVE_NS
+  /* TODO: Reloading issue, https://codeberg.org/MonadicSheep/emacs/issues/4 */
   for (int y = 0; y < height; ++y)
     for (int x = 0; x < width; ++x)
       PUT_PIXEL (img->pixmap, x, y, src[y * width + x]);
-
 #elif defined HAVE_ANDROID
   struct android_image *ximg = android_create_image (FRAME_DISPLAY_INFO (f)->n_planes,
 						     ANDROID_Z_PIXMAP, NULL, width, height);
@@ -5791,9 +5792,8 @@ canvas_prepare_for_display (struct frame *f, struct image *img)
       gui_put_x_image (f, ximg, img->pixmap, width, height);
       image_destroy_x_image (ximg);
     }
-
 #elif defined HAVE_HAIKU
-    /* TODO: Add support */
+    /* TODO: Add basic implementation */
 #endif
 
   unblock_input ();
