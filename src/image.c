@@ -5755,12 +5755,18 @@ canvas_prepare_for_display (struct frame *f, struct image *img)
       x_destroy_x_image (ximg);
     }
 #elif defined HAVE_NTGUI
+    /* TODO: The code here looks generic, platform independent, but it
+       is inefficient due to all the image/pixmap
+       recreation. Nevertheless we could maybe use it as fallback for
+       platforms which are not supported properly? */
   /* TODO: Can we avoid recreating the pixmap here, and instead create
      an image and use gui_put_x_image to load it into the pixmap? See
      the HAVE_X_WINDOWS and the HAVE_ANDROID port. */
   FRAME_TERMINAL (f)->free_pixmap (f, img->pixmap);
   img->pixmap = NO_PIXMAP;
   Emacs_Pix_Container ximg;
+  /* TODO: Better use image_create_x_image_and_pixmap here if possible
+     with mask_p=0 argument? */
   if (image_create_x_image_and_pixmap_1 (f, width, height, 0,
 					 &ximg, &img->pixmap, NULL))
     {
