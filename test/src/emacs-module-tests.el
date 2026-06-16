@@ -590,76 +590,96 @@ See Bug#36226."
 
 ;;; Canvas tests
 
-;; TODO Do we have to remove the display-graphic-p checks now? The tests
-;; work always, so we can remove, right?
-
 (ert-deftest mod-test-canvas/valid ()
-  (skip-unless (display-graphic-p))
-  ;; TODO check returned hash value here
-  (should (mod-test-canvas '(image :type canvas
-                                   :data-width 100
-                                   :data-height 100)
-                           t)))
+  (let* ((canvas '(image :type canvas :data-width 100 :data-height 100))
+         (hash-before (mod-test-canvas-read canvas 100 100)))
+    (should (integerp hash-before))
+    (should (mod-test-canvas-write canvas 100 100))
+    (let ((hash-after (mod-test-canvas-read canvas 100 100)))
+      (should (integerp hash-after))
+      (should (not (eql hash-before hash-after))))))
 
 (ert-deftest mod-test-canvas/invalid ()
-  (skip-unless (display-graphic-p))
-  (should-error (mod-test-canvas '(image :type canvas)
-                                 t))
-  (should-error (mod-test-canvas nil nil))
-  (should-error (mod-test-canvas '(image :type xbm :data "") nil)))
+  (should-error (mod-test-canvas-read nil nil nil))
+  (should-error (mod-test-canvas-write nil nil nil))
+  (should (mod-test-canvas-invalid nil))
+  (should (mod-test-canvas-invalid '(image :type xbm :data "")))
+  (should-error (mod-test-canvas-read '(image :type canvas) 100 100))
+  (should-error (mod-test-canvas-write '(image :type canvas) 100 100)))
 
-;; TODO add vector test where sizes are incorrect, can we check for the error?
 (ert-deftest mod-test-canvas/vector ()
-  (skip-unless (display-graphic-p))
-    ;; TODO check returned hash value here
-  (should (mod-test-canvas `(image :type canvas
-                                   :data-width 100
-                                   :data-height 100
-                                   :data ,(make-vector (* 100 100) #xFFFF0000))
-                           t)))
+  (let* ((canvas `(image :type canvas
+                         :data-width 100 :data-height 100
+                         :data ,(make-vector (* 100 100) #xFFFF0000)))
+         (hash-before (mod-test-canvas-read canvas 100 100)))
+    (should (integerp hash-before))
+    (should (mod-test-canvas-write canvas 100 100))
+    (should (not (eql (mod-test-canvas-read canvas 100 100) hash-before))))
+  ;; Mismatched sizes: passing wrong width/height should error.
+  (let ((canvas `(image :type canvas
+                        :data-width 100 :data-height 100
+                        :data ,(make-vector (* 100 100) #xFFFF0000))))
+    (should-error (mod-test-canvas-read canvas 50 50))
+    (should-error (mod-test-canvas-write canvas 200 200))))
 
 (ert-deftest mod-test-canvas/vector-reload ()
-  (skip-unless (display-graphic-p))
   (let* ((test-vector (make-vector (* 100 100) #xFFFF0000))
-         (test-canvas `(image :type canvas
-                              :data-height 100
-                              :data-width 100
-                              :data ,test-vector)))
-    ;; TODO check returned hash value here
-    (should (mod-test-canvas test-canvas
-                             t))
+         (canvas `(image :type canvas
+                         :data-height 100 :data-width 100
+                         :data ,test-vector))
+         (hash-initial (mod-test-canvas-read canvas 100 100)))
+    (should (integerp hash-initial))
     (dotimes (i 50)
       (aset test-vector i #xFFFFFFFF))
-    (canvas-refresh test-canvas t)
-    ;; TODO check returned hash value here
-    (should (mod-test-canvas test-canvas
-                             t))))
+    (canvas-refresh canvas t)
+    (let ((hash-mutated (mod-test-canvas-read canvas 100 100)))
+      (should (integerp hash-mutated))
+      (should (not (eql hash-initial hash-mutated))))))
 
-;; TODO add unibyte test where sizes are incorrect, can we check for the error?
 (ert-deftest mod-test-canvas/unibyte ()
-  (skip-unless (display-graphic-p))
   (let* ((pixel (unibyte-string #xFF #x80 #x40 #x80))
-         (string-data (apply #'concat (make-list (* 100 100) pixel))))
-    ;; TODO check returned hash value here
-    (should (mod-test-canvas `(image :type canvas
-                                     :data-width 100
-                                     :data-height 100
-                                     :data ,string-data)
-                             t))))
+         (string-data (apply #'concat (make-list (* 100 100) pixel)))
+         (canvas `(image :type canvas
+                         :data-width 100 :data-height 100
+                         :data ,string-data))
+         (hash-before (mod-test-canvas-read canvas 100 100)))
+    (should (integerp hash-before))
+    (should (mod-test-canvas-write canvas 100 100))
+    (should (not (eql (mod-test-canvas-read canvas 100 100) hash-before))))
+  ;; Mismatched sizes: passing wrong width/height should error.
+  (let* ((pixel (unibyte-string #xFF #x80 #x40 #x80))
+         (string-data (apply #'concat (make-list (* 100 100) pixel)))
+         (canvas `(image :type canvas
+                         :data-width 100 :data-height 100
+                         :data ,string-data)))
+    (should-error (mod-test-canvas-read canvas 50 50))
+    (should-error (mod-test-canvas-write canvas 200 200))))
 
-;; TODO add file test where sizes are incorrect, can we check for the error?
 (ert-deftest mod-test-canvas/file ()
-  (skip-unless (display-graphic-p))
-  (let ((test-canvas (create-image "../data/image/canvas-argb"
-                                   'canvas
-                                   nil :data-width 100 :data-height 100)))
-    ;; TODO check returned hash value here
-    (should (mod-test-canvas test-canvas
-                             t))))
+  (let* ((canvas (create-image "../data/image/canvas-argb"
+                               'canvas nil
+                               :data-width 100 :data-height 100))
+         (hash-before (mod-test-canvas-read canvas 100 100)))
+    (should (integerp hash-before))
+    (should (mod-test-canvas-write canvas 100 100))
+    (should (not (eql (mod-test-canvas-read canvas 100 100) hash-before))))
+  ;; Mismatched sizes: passing wrong width/height should error.
+  (let ((canvas (create-image "../data/image/canvas-argb"
+                              'canvas nil
+                              :data-width 100 :data-height 100)))
+    (should-error (mod-test-canvas-read canvas 50 50))
+    (should-error (mod-test-canvas-write canvas 200 200))))
 
-;; TODO add test which creates a bunch of canvases, calls gc, creates
-;; another bunch of canvases, and so on, to make sure that the canvas
-;; freeing works correctly and doesn't crash.
+(ert-deftest mod-test-canvas/gc-stress ()
+  "Allocate canvases in batches with GC between batches.
+Verifies that canvas pixel buffers are freed correctly and do not
+cause use-after-free crashes or GC assertion failures."
+  (dotimes (_ 5)
+    (dotimes (_ 20)
+      (let* ((canvas '(image :type canvas :data-width 50 :data-height 50))
+             (hash (mod-test-canvas-read canvas 50 50)))
+        (should (integerp hash))))
+    (garbage-collect)))
 
 ;; TODO Add new canvas-32.diff to https://github.com/minad/emacs-canvas-patch
 ;; TODO Add new canvas-31.diff to https://github.com/minad/emacs-canvas-patch
