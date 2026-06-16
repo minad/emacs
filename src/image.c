@@ -5783,6 +5783,7 @@ canvas_prepare_for_display (struct frame *f, struct image *img)
     }
 #elif defined HAVE_NS
   /* TODO: Reloading issue, https://codeberg.org/MonadicSheep/emacs/issues/4 */
+  img->pixmap = ns_image_reset(img->pixmap, width, height);
   for (int y = 0; y < height; ++y)
     for (int x = 0; x < width; ++x)
       PUT_PIXEL (img->pixmap, x, y, src[y * width + x]);
