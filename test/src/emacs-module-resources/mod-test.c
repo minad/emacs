@@ -752,33 +752,116 @@ Fmod_test_make_string (emacs_env *env, ptrdiff_t nargs,
   return ret;
 }
 
-// TODO: Instead of Fmod_test_canvas we should maybe write three functions
-// TODO: Fmod_test_canvas_read (computes hash)
-// TODO: Fmod_test_canvas_write (writes all pixels, e.g., inverts them)
-// TODO: Fmod_test_canvas_invalid (checks that canvas_pixel is nil for given invalid canvas)
+// canvas djb2 hash
+
+static uint32_t
+canvas_hash (uint32_t *buf, int width, int height)
+{
+  uint32_t hash = 5381;
+  unsigned char *bytes = (unsigned char *) buf;
+
+  for (int i = 0; i < width *height * 4; i++)
+    hash = hash * 33 ^ bytes[i];
+
+  return hash;
+}
 
 static emacs_value
-Fmod_test_canvas (emacs_env *env, ptrdiff_t nargs,
+Fmod_test_canvas_read (emacs_env *env, ptrdiff_t nargs,
 		  emacs_value *args, void *data)
 {
-  assert (nargs == 2);
+  assert (nargs == 3);
+  uint32_t* buf = env->canvas_pixel (env, args[0]);
 
-  if (env->is_not_nil (env, args[1]))
+  if (!buf)
     {
-      uint32_t* buf = env->canvas_pixel (env, args[0]);
-      if (!buf)
-        return env->intern (env, "nil");
-      assert (buf);
-      memset (buf, 42, 4 * 100 * 100);
-      emacs_value canvas_args[2] = {args[0], env->intern(env, "nil")};
-      env->funcall (env, env->intern(env, "canvas-refresh"), 2, canvas_args);
+      signal_error(env, "Not a valid canvas");
+      return env->intern (env, "nil");
     }
-  else
+
+  int width  = (int) env->extract_integer (env, args[1]);
+  int height = (int) env->extract_integer (env, args[2]);
+
+  /* Validate dimensions against the canvas image spec. */
+  emacs_value Qimage_property = env->intern (env, "image-property");
+  emacs_value Qdata_width     = env->intern (env, ":data-width");
+  emacs_value Qdata_height    = env->intern (env, ":data-height");
+  emacs_value iw_val = env->funcall (env, Qimage_property, 2,
+                                     (emacs_value[]){args[0], Qdata_width});
+  emacs_value ih_val = env->funcall (env, Qimage_property, 2,
+                                     (emacs_value[]){args[0], Qdata_height});
+  int iw = (int) env->extract_integer (env, iw_val);
+  int ih = (int) env->extract_integer (env, ih_val);
+
+  if (width != iw || height != ih)
     {
-      assert (!env->canvas_pixel (env, args[0]));
+      signal_error (env, "Canvas size mismatch");
+      return env->intern (env, "nil");
     }
-  // TODO What about computing a hash value from all the pixels here and returning that value?
-  // This way we can check that the pixels have been changed correctly.
+
+  uint32_t hash = canvas_hash (buf, width, height);
+
+  return env->make_integer (env, (intmax_t) hash);
+}
+
+static emacs_value
+Fmod_test_canvas_write (emacs_env *env, ptrdiff_t nargs,
+		  emacs_value *args, void *data)
+{
+  assert (nargs == 3);
+  uint32_t* buf = env->canvas_pixel (env, args[0]);
+
+  if (!buf)
+    {
+      signal_error(env, "Not a valid canvas");
+      return env->intern (env, "nil");
+    }
+
+  int width  = (int) env->extract_integer (env, args[1]);
+  int height = (int) env->extract_integer (env, args[2]);
+
+  /* Validate dimensions against the canvas image spec. */
+  emacs_value Qimage_property = env->intern (env, "image-property");
+  emacs_value Qdata_width     = env->intern (env, ":data-width");
+  emacs_value Qdata_height    = env->intern (env, ":data-height");
+  emacs_value iw_val = env->funcall (env, Qimage_property, 2,
+                                     (emacs_value[]){args[0], Qdata_width});
+  emacs_value ih_val = env->funcall (env, Qimage_property, 2,
+                                     (emacs_value[]){args[0], Qdata_height});
+  int iw = (int) env->extract_integer (env, iw_val);
+  int ih = (int) env->extract_integer (env, ih_val);
+
+  if (width != iw || height != ih)
+    {
+      signal_error (env, "Canvas size mismatch");
+      return env->intern (env, "nil");
+    }
+
+  for (int i = 0; i < width * height; i++)
+    buf[i] = ~buf[i]; // invert the pixels
+
+  emacs_value canvas_args[2] = {args[0], env->intern (env, "nil")};
+  env->funcall (env, env->intern (env, "canvas-refresh"), 2, canvas_args);
+
+  return env->intern (env, "t");
+}
+
+static emacs_value
+Fmod_test_canvas_invalid (emacs_env *env, ptrdiff_t nargs,
+          emacs_value *args, void *data)
+{
+  assert (nargs == 1);
+  uint32_t *buf = env->canvas_pixel (env, args[0]);
+
+   if (env->non_local_exit_check (env) != emacs_funcall_exit_return)
+     env->non_local_exit_clear (env); // don't propagate the error to ERT
+
+  if (buf)
+    {
+      signal_error (env, "Expected invalid canvas, but canvas_pixel returned non-NULL");
+      return env->intern (env, "nil");
+    }
+
   return env->intern (env, "t");
 }
 
@@ -883,7 +966,9 @@ emacs_module_init (struct emacs_runtime *ert)
   DEFUN ("mod-test-funcall", Fmod_test_funcall, 1, emacs_variadic_function,
          NULL, NULL);
   DEFUN ("mod-test-make-string", Fmod_test_make_string, 2, 2, NULL, NULL);
-  DEFUN ("mod-test-canvas", Fmod_test_canvas, 2, 2, NULL, NULL);
+  DEFUN ("mod-test-canvas-read", Fmod_test_canvas_read, 3, 3, NULL, NULL);
+  DEFUN ("mod-test-canvas-write", Fmod_test_canvas_write, 3, 3, NULL, NULL);
+  DEFUN ("mod-test-canvas-invalid", Fmod_test_canvas_invalid, 1, 1, NULL, NULL);
 
 #undef DEFUN
 
