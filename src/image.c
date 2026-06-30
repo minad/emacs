@@ -5770,6 +5770,7 @@ canvas_prepare_for_display (struct frame *f, struct image *img)
       image_destroy_x_image (ximg);
     }
 #else
+  /* TODO: Test this code on Windows, Linux and Mac. */
   /* Platform independent canvas reloading.  Less efficient, since it recreates images and pixmaps. */
   FRAME_TERMINAL (f)->free_pixmap (f, img->pixmap);
   img->pixmap = NO_PIXMAP;
@@ -5785,7 +5786,7 @@ canvas_prepare_for_display (struct frame *f, struct image *img)
 		     r = (c >> 16) & 255,
 		     g = (c >>  8) & 255,
 		     b = c        & 255;
-            PUT_PIXEL (ximg, x, y, RGB (r, g, b));
+            PUT_PIXEL (ximg, x, y, RGB (r, g, b)); /* TODO: Use lookup_rgb_color instead of RGB */
           }
       image_put_x_image (f, img, ximg, 0);
     }
