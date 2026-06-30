@@ -758,10 +758,9 @@ static uint32_t
 canvas_hash (uint32_t *buf, int width, int height)
 {
   uint32_t hash = 5381;
-  unsigned char *bytes = (unsigned char *) buf;
 
-  for (int i = 0; i < width *height * 4; i++)
-    hash = hash * 33 ^ bytes[i];
+  for (int i = 0; i < width *height; i++)
+    hash = hash * 33 ^ buf[i];
 
   return hash;
 }
