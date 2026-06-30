@@ -5710,9 +5710,8 @@ canvas_prepare_for_display (struct frame *f, struct image *img)
   uint32_t* src = c->pixel;
   int width = c->width, height = c->height;
 
-  /* Alpha channel is preserved here. Potentially preserve it when
-     drawing the image in x_draw_image_glyph_string?  */
 #ifdef USE_CAIRO
+  /* Cairo: Optimized canvas reloading. Reuse the existing Cairo surface.  */
   cairo_surface_t* surface;
   if (img->cr_data
       && cairo_pattern_get_type (img->cr_data) == CAIRO_PATTERN_TYPE_SURFACE
@@ -5721,6 +5720,8 @@ canvas_prepare_for_display (struct frame *f, struct image *img)
       cairo_surface_flush (surface);
       int stride = cairo_image_surface_get_stride (surface);
       unsigned char *dst = cairo_image_surface_get_data (surface);
+      /* Alpha channel is preserved here. Potentially preserve it when
+	 drawing the image in x_draw_image_glyph_string?  */
       if (stride == 4 * width) /* Fast path */
 	{
 	  memcpy (dst, src, stride * height);
@@ -5733,6 +5734,7 @@ canvas_prepare_for_display (struct frame *f, struct image *img)
       cairo_surface_mark_dirty (surface);
     }
 #elif defined HAVE_X_WINDOWS
+  /* X11: Optimized canvas reloading. Reuse the existing pixmap.  */
   int depth = FRAME_DISPLAY_INFO (f)->n_planes;
   XImage *ximg = XCreateImage (FRAME_X_DISPLAY (f), FRAME_X_VISUAL (f),
 			       depth, ZPixmap, 0, NULL, width, height,
@@ -5754,19 +5756,25 @@ canvas_prepare_for_display (struct frame *f, struct image *img)
       gui_put_x_image (f, ximg, img->pixmap, width, height);
       x_destroy_x_image (ximg);
     }
-#elif defined HAVE_NTGUI
-    /* TODO: The code here looks generic, platform independent, but it
-       is inefficient due to all the image/pixmap
-       recreation. Nevertheless we could maybe use it as fallback for
-       platforms which are not supported properly? */
-  /* TODO: Can we avoid recreating the pixmap here, and instead create
-     an image and use gui_put_x_image to load it into the pixmap? See
-     the HAVE_X_WINDOWS and the HAVE_ANDROID port. */
+#elif defined HAVE_ANDROID
+  /* Android: Optimized canvas reloading. Reuse the existing pixmap.  */
+  struct android_image *ximg = android_create_image (FRAME_DISPLAY_INFO (f)->n_planes,
+						     ANDROID_Z_PIXMAP, NULL, width, height);
+  if (ximg)
+    {
+      ximg->data = xmalloc (ximg->bytes_per_line * height);
+      for (int y = 0; y < height; ++y)
+        for (int x = 0; x < width; ++x)
+          PUT_PIXEL (ximg, x, y, src[y * width + x] & 0x00FFFFFF);
+      gui_put_x_image (f, ximg, img->pixmap, width, height);
+      image_destroy_x_image (ximg);
+    }
+#else
+  /* Platform independent canvas reloading.  Less efficient, since it recreates images and pixmaps. */
   FRAME_TERMINAL (f)->free_pixmap (f, img->pixmap);
   img->pixmap = NO_PIXMAP;
   Emacs_Pix_Container ximg;
-  /* TODO: Better use image_create_x_image_and_pixmap here if possible
-     with mask_p=0 argument? */
+  /* TODO: Use image_create_x_image_and_pixmap here with mask_p=0 argument */
   if (image_create_x_image_and_pixmap_1 (f, width, height, 0,
 					 &ximg, &img->pixmap, NULL))
     {
@@ -5781,26 +5789,6 @@ canvas_prepare_for_display (struct frame *f, struct image *img)
           }
       image_put_x_image (f, img, ximg, 0);
     }
-#elif defined HAVE_NS
-  /* TODO: Reloading issue, https://codeberg.org/MonadicSheep/emacs/issues/4 */
-  img->pixmap = ns_image_reset(img->pixmap, width, height);
-  for (int y = 0; y < height; ++y)
-    for (int x = 0; x < width; ++x)
-      PUT_PIXEL (img->pixmap, x, y, src[y * width + x]);
-#elif defined HAVE_ANDROID
-  struct android_image *ximg = android_create_image (FRAME_DISPLAY_INFO (f)->n_planes,
-						     ANDROID_Z_PIXMAP, NULL, width, height);
-  if (ximg)
-    {
-      ximg->data = xmalloc (ximg->bytes_per_line * height);
-      for (int y = 0; y < height; ++y)
-        for (int x = 0; x < width; ++x)
-          PUT_PIXEL (ximg, x, y, src[y * width + x] & 0x00FFFFFF);
-      gui_put_x_image (f, ximg, img->pixmap, width, height);
-      image_destroy_x_image (ximg);
-    }
-#elif defined HAVE_HAIKU
-    /* TODO: Add basic implementation */
 #endif
 
   unblock_input ();
