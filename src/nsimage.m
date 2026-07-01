@@ -256,6 +256,19 @@ ns_set_alpha (void *img, int x, int y, unsigned char a)
   [(EmacsImage *)img setAlphaAtX: x Y: y to: a];
 }
 
+void *
+ns_image_reset (void *img, int width, int height)
+{
+  [(EmacsImage *)img release];
+  return ns_image_for_XPM (width, height, 32);
+}
+
+void
+ns_image_recache (void *img)
+{
+  [(EmacsImage *)img recache];
+}
+
 size_t
 ns_image_size_in_bytes (void *img)
 {
