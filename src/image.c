@@ -5775,9 +5775,7 @@ canvas_prepare_for_display (struct frame *f, struct image *img)
   FRAME_TERMINAL (f)->free_pixmap (f, img->pixmap);
   img->pixmap = NO_PIXMAP;
   Emacs_Pix_Container ximg;
-  /* TODO: Use image_create_x_image_and_pixmap here with mask_p=0 argument */
-  if (image_create_x_image_and_pixmap_1 (f, width, height, 0,
-					 &ximg, &img->pixmap, NULL))
+  if (image_create_x_image_and_pixmap (f, img, width, height, 0, &ximg, 0))
     {
       for (int y = 0; y < height; ++y)
         for (int x = 0; x < width; ++x)
