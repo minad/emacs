@@ -5769,8 +5769,17 @@ canvas_prepare_for_display (struct frame *f, struct image *img)
       gui_put_x_image (f, ximg, img->pixmap, width, height);
       image_destroy_x_image (ximg);
     }
+
+#elif defined HAVE_NS
+  /* MacOS: Inefficient canvas reloading. Instead of reusing the existing
+     NSImage it creates a new one. */
+  img->pixmap = ns_image_reset(img->pixmap, width, height);
+  for (int y = 0; y < height; ++y)
+    for (int x = 0; x < width; ++x)
+      PUT_PIXEL (img->pixmap, x, y, src[y * width + x]);
+  ns_image_recache (img->pixmap);
+
 #else
-  /* TODO: Test this code on Windows, Linux and Mac. */
   /* Platform independent canvas reloading.  Less efficient, since it recreates images and pixmaps. */
   FRAME_TERMINAL (f)->free_pixmap (f, img->pixmap);
   img->pixmap = NO_PIXMAP;
