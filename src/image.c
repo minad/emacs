@@ -5786,7 +5786,7 @@ canvas_prepare_for_display (struct frame *f, struct image *img)
 		     r = (c >> 16) & 255,
 		     g = (c >>  8) & 255,
 		     b = c        & 255;
-            PUT_PIXEL (ximg, x, y, RGB (r, g, b)); /* TODO: Use lookup_rgb_color instead of RGB */
+            PUT_PIXEL (ximg, x, y, lookup_rgb_color (r, g, b));
           }
       image_put_x_image (f, img, ximg, 0);
     }
