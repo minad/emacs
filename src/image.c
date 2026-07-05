@@ -5643,6 +5643,7 @@ canvas_get (Lisp_Object image, struct image_keyword *fmt)
 
   if (c && (c->width != width || c->height != height))
     {
+      /* TODO: Resize canvas buffer here, update c->width and c-height. This will invalidate exisiting canvas_pixel pointers! Document that canvas_pixel gets invalid if the :data-width, :data-height are changed. */
       image_error ("Canvas size has changed unexpectedly (:data-width, :data-height)");
       return NULL;
     }
