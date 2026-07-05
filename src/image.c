@@ -5641,13 +5641,6 @@ canvas_get (Lisp_Object image, struct image_keyword *fmt)
   int width = XFIXNAT (fmt[CANVAS_WIDTH].value),
       height = XFIXNAT (fmt[CANVAS_HEIGHT].value);
 
-  if (c && (c->width != width || c->height != height))
-    {
-      /* TODO: Resize canvas buffer here, update c->width and c-height. This will invalidate exisiting canvas_pixel pointers! Document that canvas_pixel gets invalid if the :data-width, :data-height are changed. */
-      image_error ("Canvas size has changed unexpectedly (:data-width, :data-height)");
-      return NULL;
-    }
-
   if (!c)
     {
       /* Free old canvases now, when allocating a new one, to keep
@@ -5664,6 +5657,16 @@ canvas_get (Lisp_Object image, struct image_keyword *fmt)
       c->next = canvas_list;
       canvas_list = c;
       Fputhash (image, make_pointer_integer (c), canvas_map);
+
+      /* Initialize pixel buffer from :data or :file if supplied. */
+      canvas_apply_data (c, fmt);
+    }
+  else if (c->width != width || c->height != height)
+    {
+      /* Resize canvas. */
+      c->width = width;
+      c->height = height;
+      c->pixel = xrealloc (c->pixel, 4 * width * height);
 
       /* Initialize pixel buffer from :data or :file if supplied. */
       canvas_apply_data (c, fmt);

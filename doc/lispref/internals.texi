@@ -2031,6 +2031,7 @@ for what they are.
 
 The following functions allow you to operate on canvas image objects with dynamic modules:
 
+/* TODO: Document that buffer is only valid as long as CANVAS is alive and size does not change. */
 @anchor{canvas_pixel}
 @deftypefn Function uint32_t *canvas_pixel (emacs_env *@var{env}, emacs_value @var{canvas})
 The function gives access to the pixel buffer.  The pixel buffer
