@@ -5663,9 +5663,6 @@ canvas_get (Lisp_Object image, struct image_keyword *fmt)
     }
   else if (c->width != width || c->height != height)
     {
-      /* Flush the image with old size on all frames.  */
-      Fimage_flush(image, Qt);
-
       /* Resize canvas. */
       c->width = width;
       c->height = height;
@@ -5716,10 +5713,6 @@ canvas_prepare_for_display (struct frame *f, struct image *img)
   img->refresh = c->refresh;
   uint32_t* src = c->pixel;
   int width = c->width, height = c->height;
-
-  /* TODO maybe check c->width against img->original_width and c->height
-     against img->original_height here, and bail out on mismatch?
-     Maybe we should only add an assertion? */
 
 #ifdef USE_CAIRO
   /* Cairo: Optimized canvas reloading. Reuse the existing Cairo surface.  */
