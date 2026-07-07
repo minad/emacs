@@ -5501,6 +5501,7 @@ canvas_image_p (Lisp_Object object)
 {
   struct image_keyword fmt[CANVAS_LAST];
   memcpy (fmt, canvas_format, sizeof fmt);
+  /* TODO Check here that width*height*4 does not overflow integers */
   return (parse_image_spec (object, fmt, CANVAS_LAST, Qcanvas)
 	  /* Either `:file' or `:data' can be present.  */
 	  && fmt[CANVAS_FILE].count + fmt[CANVAS_DATA].count <= 1);
