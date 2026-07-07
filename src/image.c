@@ -121,7 +121,7 @@ struct canvas
   /* Dimension of the canvas */
   int width, height;
   /* Pinned pixel memory buffer in ARGB32 format */
-  uint32_t *pixel;
+  uint32_t *pixel; /* TODO: Rename to data */
 };
 
 static void canvas_prepare_for_display (struct frame *f, struct image *img);
