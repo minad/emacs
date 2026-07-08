@@ -30,6 +30,14 @@ applies, and please also update docstrings as needed.
 
 * Changes in Emacs 32.1
 
++++
+** Support for canvas image objects.
+Canvas images support efficient updating and refreshing.  An image
+specifier with ':type canvas' creates a canvas image.  The canvas has an
+associated writable pixel buffer.  After changing the ':data' vector or
+writing to the pixel buffer a call to 'canvas-refresh' redraws the
+canvas image.
+
 ---
 ** Emacs no longer kills child processes after EPIPE.
 Previously, Emacs would immediately kill a child process and set its
