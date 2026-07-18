@@ -3354,7 +3354,8 @@ struct image
   ptrdiff_t id;
 
   /* Refresh counter reflecting the current version of the image.
-     Always larger than zero for images which may need refreshing.  */
+     Always larger than zero for images which may need refreshing.
+     Right now it is only used by canvas images.  */
   uint32_t refresh;
 
   /* Hash collision chain.  */
