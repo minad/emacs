@@ -7506,13 +7506,19 @@ by either providing ARGB32 data as a fixnum vector or as an unibyte string
 in @code{:data}.  Path to a file containing the ARGB32 data in @code{:file}
 can also be provided.
 
-So, the above canvas can also be created as follows:
+A canvas can also be created as follows where the data is initially
+loaded from a file, or from a vector:
 
 @lisp
-(setq my-canvas (create-image "/path/to/file"
-                              'canvas nil
-                              :data-width 800
-                              :data-height 600))
+(setq my-file-canvas (create-image "/path/to/file"
+                                   'canvas nil
+                                   :data-width 800
+                                   :data-height 600))
+(setq my-vector (make-vector (* 800 600) #xFFFF0000))
+(setq my-vector-canvas (create-image my-vector
+                                     'canvas t
+                                     :data-width 800
+                                     :data-height 600))
 @end lisp
 
 If the above values for the dimensions change, then Emacs will readjust the
