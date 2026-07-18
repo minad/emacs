@@ -2031,8 +2031,8 @@ for what they are.
 
 The following functions allow you to operate on canvas image objects with dynamic modules:
 
-@anchor{canvas_pixel}
-@deftypefn Function uint32_t *canvas_pixel (emacs_env *@var{env}, emacs_value @var{canvas})
+@anchor{canvas_data}
+@deftypefn Function uint32_t *canvas_data (emacs_env *@var{env}, emacs_value @var{canvas})
 The function gives access to the pixel buffer.  The pixel buffer
 (of ARGB32 format) is in row-major order with a size @var{width} * @var{height}.
 The pointer will be valid as long as the object @var{canvas} is alive.
@@ -2048,7 +2048,7 @@ can be done from the module via an Elisp funcall.
 
 @example
 /* Access the pixel buffer */
-uint32_t *pixel = env->canvas_pixel (env, canvas);
+uint32_t *pixel = env->canvas_data (env, canvas);
 /* Write to the pixel buffer */
 ...
 /* Redraw the canvas */

@@ -963,10 +963,10 @@ module_vec_size (emacs_env *env, emacs_value vector)
 }
 
 static uint32_t*
-module_canvas_pixel (emacs_env *env, emacs_value canvas)
+module_canvas_data (emacs_env *env, emacs_value canvas)
 {
   MODULE_FUNCTION_BEGIN (NULL);
-  uint32_t* pixel = canvas_pixel (value_to_lisp (canvas));
+  uint32_t* pixel = canvas_data (value_to_lisp (canvas));
   MODULE_INTERNAL_CLEANUP ();
   return pixel;
 }
@@ -1621,7 +1621,7 @@ initialize_environment (emacs_env *env, struct emacs_env_private *priv)
   env->open_channel = module_open_channel;
   env->make_interactive = module_make_interactive;
   env->make_unibyte_string = module_make_unibyte_string;
-  env->canvas_pixel = module_canvas_pixel;
+  env->canvas_data = module_canvas_data;
   return env;
 }
 

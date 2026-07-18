@@ -770,7 +770,7 @@ Fmod_test_canvas_read (emacs_env *env, ptrdiff_t nargs,
 		  emacs_value *args, void *data)
 {
   assert (nargs == 3);
-  uint32_t* buf = env->canvas_pixel (env, args[0]);
+  uint32_t* buf = env->canvas_data (env, args[0]);
 
   if (!buf)
     {
@@ -808,7 +808,7 @@ Fmod_test_canvas_write (emacs_env *env, ptrdiff_t nargs,
 		  emacs_value *args, void *data)
 {
   assert (nargs == 3);
-  uint32_t* buf = env->canvas_pixel (env, args[0]);
+  uint32_t* buf = env->canvas_data (env, args[0]);
 
   if (!buf)
     {
@@ -850,14 +850,14 @@ Fmod_test_canvas_invalid (emacs_env *env, ptrdiff_t nargs,
           emacs_value *args, void *data)
 {
   assert (nargs == 1);
-  uint32_t *buf = env->canvas_pixel (env, args[0]);
+  uint32_t *buf = env->canvas_data (env, args[0]);
 
    if (env->non_local_exit_check (env) != emacs_funcall_exit_return)
      env->non_local_exit_clear (env); // don't propagate the error to ERT
 
   if (buf)
     {
-      signal_error (env, "Expected invalid canvas, but canvas_pixel returned non-NULL");
+      signal_error (env, "Expected invalid canvas, but canvas_data returned non-NULL");
       return env->intern (env, "nil");
     }
 
