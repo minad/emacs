@@ -3233,10 +3233,6 @@ struct image
 # if !defined USE_CAIRO && defined HAVE_XRENDER
   /* Picture versions of pixmap and mask for compositing.  */
   Picture picture, mask_picture;
-
-  /* We need to store the original image dimensions in case we have to
-     call XGetImage.  */
-  int original_width, original_height;
 # endif
 #endif	/* HAVE_X_WINDOWS */
 #ifdef HAVE_ANDROID
@@ -3253,9 +3249,6 @@ struct image
 #ifdef HAVE_HAIKU
   /* The affine transformation to apply to this image.  */
   double transform[3][3];
-
-  /* The original width and height of the image.  */
-  int original_width, original_height;
 
   /* Whether or not bilinear filtering should be used to "smooth" the
      image.  */
@@ -3298,6 +3291,10 @@ struct image
 
   /* Width and height of the image.  */
   int width, height;
+
+  /* The original width and height of the image before transformations
+     like scaling or rotation.  */
+  int original_width, original_height;
 
   /* The scale factor applied to the image.  */
   double scale;
