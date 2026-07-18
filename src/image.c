@@ -3659,6 +3659,10 @@ lookup_image (struct frame *f, Lisp_Object spec, int face_id)
 		}
 	    }
 
+	  /* Store the original width and height before transforming the image.  */
+	  img->original_width = img->width;
+	  img->original_height = img->height;
+
 	  /* Do image transformations and compute masks, unless we
 	     don't have the image yet.  */
 	  if (!EQ (builtin_lisp_symbol (img->type->type), Qpostscript))
@@ -3667,8 +3671,6 @@ lookup_image (struct frame *f, Lisp_Object spec, int face_id)
           /* postprocess_image above may modify the image or the mask,
              relying on the image's real width and height, so
              image_set_transform must be called after it.  */
-	  img->original_width = img->width;
-	  img->original_height = img->height;
 #ifdef HAVE_NATIVE_TRANSFORMS
           image_set_transform (f, img);
 #endif
