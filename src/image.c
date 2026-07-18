@@ -5474,7 +5474,6 @@ enum canvas_keyword_index
 static const struct image_keyword canvas_format[CANVAS_LAST] =
 {
   {":type",		IMAGE_SYMBOL_VALUE,			1},
-  /* TODO: Update all tests with canvas :id */
   {":id",	        IMAGE_SYMBOL_VALUE,			1},
   {":file",		IMAGE_STRING_VALUE,			0},
   {":data",		IMAGE_DONT_CHECK_VALUE_TYPE,		0},
