@@ -7513,11 +7513,11 @@ file, or from a vector:
                                    'canvas nil
                                    :data-width 800
                                    :data-height 600))
-(setq my-vector (make-vector (* 800 600) #xFFFF0000))
-(setq my-vector-canvas (create-image my-vector
-                                     'canvas t
-                                     :data-width 800
-                                     :data-height 600))
+(setq my-vec (make-vector (* 800 600) #xFFFF0000))
+(setq my-vec-canvas (create-image my-vec
+                                  'canvas t
+                                  :data-width 800
+                                  :data-height 600))
 @end lisp
 
 If the above values for the dimensions change, then Emacs will readjust the
@@ -7543,7 +7543,10 @@ argument is passed to @code{canvas-refresh} then Emacs will reload the
 The following code refreshes the canvas by reloading the data or file:
 
 @lisp
-(canvas-refresh my-canvas t)
+;; Draw pixels
+(aset my-vec <index> <color>)
+;; Reload and refresh canvas images
+(canvas-refresh my-vec-canvas 'reload-data)
 @end lisp
 
 Canvas images can be manipulated and refreshed via dynamic modules.
