@@ -5856,9 +5856,9 @@ will be called implicitly after the timer or command.  For example:
 
   (let ((i 0))
     (run-at-time nil 0.1 (lambda ()
-       (aset (plist-get (cdr canvas) :data) i #xFF)
-       (incf i)
-       (canvas-refresh canvas 'reload-data))))  */)
+      (aset (plist-get (cdr canvas) :data) (min i 99) #xFF)
+      (incf i)
+      (canvas-refresh canvas 'reload-data))))  */)
   (Lisp_Object image, Lisp_Object reload_data)
 {
   struct image_keyword fmt[CANVAS_LAST];
