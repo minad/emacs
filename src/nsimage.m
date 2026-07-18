@@ -263,12 +263,6 @@ ns_image_reset (void *img, int width, int height)
   return ns_image_for_XPM (width, height, 32);
 }
 
-void
-ns_image_recache (void *img)
-{
-  [(EmacsImage *)img recache];
-}
-
 size_t
 ns_image_size_in_bytes (void *img)
 {
