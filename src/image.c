@@ -5776,8 +5776,7 @@ canvas_prepare_for_display (struct frame *f, struct image *img)
     }
 
 #elif defined HAVE_NS
-  /* MacOS: Inefficient canvas reloading. Instead of reusing the existing
-     NSImage it creates a new one. */
+  /* MacOS: Recreates and fills the pixmap */
   img->pixmap = ns_image_reset(img->pixmap, width, height);
   for (int y = 0; y < height; ++y)
     for (int x = 0; x < width; ++x)
