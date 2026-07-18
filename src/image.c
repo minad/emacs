@@ -3066,8 +3066,6 @@ image_set_transform (struct frame *f, struct image *img)
     { 0, 0, 1 },
   };
 
-  img->original_width = img->width;
-  img->original_height = img->height;
   img->use_bilinear_filtering = false;
 
   memcpy (&img->transform, identity, sizeof identity);
@@ -3091,10 +3089,6 @@ image_set_transform (struct frame *f, struct image *img)
 # if !defined USE_CAIRO && defined HAVE_XRENDER
   if (!img->picture)
     return;
-
-  /* Store the original dimensions as we'll overwrite them later.  */
-  img->original_width = img->width;
-  img->original_height = img->height;
 # endif
 
   /* Determine size.  */
@@ -3673,6 +3667,8 @@ lookup_image (struct frame *f, Lisp_Object spec, int face_id)
           /* postprocess_image above may modify the image or the mask,
              relying on the image's real width and height, so
              image_set_transform must be called after it.  */
+	  img->original_width = img->width;
+	  img->original_height = img->height;
 #ifdef HAVE_NATIVE_TRANSFORMS
           image_set_transform (f, img);
 #endif
