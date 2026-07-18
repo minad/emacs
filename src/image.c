@@ -5790,7 +5790,6 @@ canvas_prepare_for_display (struct frame *f, struct image *img)
   for (int y = 0; y < height; ++y)
     for (int x = 0; x < width; ++x)
       PUT_PIXEL (img->pixmap, x, y, src[y * width + x]);
-  ns_image_recache (img->pixmap);
 
 #else
   /* Platform independent canvas reloading.  Less efficient, since it recreates images and pixmaps. */
