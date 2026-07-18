@@ -1896,8 +1896,8 @@ prepare_image_for_display (struct frame *f, struct image *img)
     }
 #endif
 
-  /* Copy canvas pixel into pixmap if refresh counter has been updated.
-     For canvases the refresh counter is always >= 1. */
+  /* Update image pixmap from canvas pixel buffer if refresh counter has
+     been updated.  For canvases the refresh counter is always >= 1. */
   if (img->refresh
       && EQ (image_spec_value (img->spec, QCtype, NULL), Qcanvas)
       && img->refresh != ((struct canvas *) XFIXNUMPTR (img->lisp_data))->refresh)
