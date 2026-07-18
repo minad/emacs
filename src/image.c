@@ -5509,7 +5509,7 @@ canvas_image_p (Lisp_Object object)
       ptrdiff_t h = XFIXNAT (fmt[CANVAS_HEIGHT].value);
 
       /* Check that w*h*4 does not overflow */
-      if (w <= IT_MAX / 4 / h)
+      if (w <= INT_MAX / 4 / h)
 	return true;
     }
 
