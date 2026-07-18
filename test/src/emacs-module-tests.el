@@ -696,10 +696,12 @@ See Bug#36226."
   "Allocate canvases in batches with GC between batches.
 Verifies that canvas pixel buffers are freed correctly and do not
 cause use-after-free crashes or GC assertion failures."
-  (dotimes (_ 5)
-    (dotimes (_ 20)
-      (let* ((canvas '(image :type canvas :data-width 78 :data-height 342))
-             (hash (mod-test-canvas-read canvas 78 342)))
+  (dotimes (_ 10)
+    (dotimes (x 20)
+      (let* ((canvas `(image :type canvas :id test-canvas
+                             :data-width ,(+ x 10)
+                             :data-height ,(+ x 20)))
+             (hash (mod-test-canvas-read canvas (+ x 10) (+ x 20))))
         (should (integerp hash))))
     (garbage-collect)))
 
