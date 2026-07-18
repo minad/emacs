@@ -5844,7 +5844,10 @@ specification.
 
 `redisplay' must be called after `canvas-refresh' such that the updated
 canvas is displayed even if double buffering is enabled, for example
-when a canvas is updated in a loop:
+when a canvas is updated in a loop.
+
+  (setq canvas (create-image (make-vector 100 0) 'canvas t
+                             :data-width 10 :data-height 10))
 
   (dotimes (i 100)
     (aset (plist-get (cdr canvas) :data) i #xFF)
