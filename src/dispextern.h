@@ -3289,7 +3289,8 @@ struct image
      valid, respectively. */
   bool_bf background_valid : 1, background_transparent_valid : 1;
 
-  /* Width and height of the image.  */
+  /* Width and height of the image.  These values depend on
+     the :scale or :rotation image parameters.  */
   int width, height;
 
   /* The original width and height of the image before transformations
