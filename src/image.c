@@ -5845,7 +5845,13 @@ when a canvas is updated in a loop:
     (redisplay))
 
 When `canvas-refresh' is called from a timer or a command, `redisplay'
-will be called implicitly after the timer or command.  */)
+will be called implicitly after the timer or command.  For example:
+
+  (let ((i 0))
+    (run-at-time nil 0.1 (lambda ()
+       (aset (plist-get (cdr canvas) :data) i #xFF)
+       (incf i)
+       (canvas-refresh canvas 'reload-data))))  */)
   (Lisp_Object image, Lisp_Object reload_data)
 {
   struct image_keyword fmt[CANVAS_LAST];
