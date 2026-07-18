@@ -966,9 +966,9 @@ static uint32_t*
 module_canvas_data (emacs_env *env, emacs_value canvas)
 {
   MODULE_FUNCTION_BEGIN (NULL);
-  uint32_t* pixel = canvas_data (value_to_lisp (canvas));
+  uint32_t* data = canvas_data (value_to_lisp (canvas));
   MODULE_INTERNAL_CLEANUP ();
-  return pixel;
+  return data;
 }
 
 /* This function should return true if and only if maybe_quit would
