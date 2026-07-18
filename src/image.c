@@ -2304,11 +2304,11 @@ filter_image_spec (Lisp_Object spec)
 	     breaks the image cache.  Furthermore for canvases do not
 	     check the data for equality, such that data can be changed
 	     via mutation to refresh the canvas. Filter these keys out.
-	     */
-	  if (!((is_canvas && EQ (key, QCdata))
-		|| EQ (key, QCanimate_buffer)
-		|| EQ (key, QCanimate_tardiness)
-		|| EQ (key, QCanimate_position)))
+	  */
+	  if (is_canvas ? EQ (key, QCdata) :
+	      EQ (key, QCanimate_buffer)
+	      || EQ (key, QCanimate_tardiness)
+	      || EQ (key, QCanimate_position))
 	    {
 	      out = Fcons (value, out);
 	      out = Fcons (key, out);
