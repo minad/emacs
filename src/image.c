@@ -5478,7 +5478,8 @@ enum canvas_keyword_index
 static const struct image_keyword canvas_format[CANVAS_LAST] =
 {
   {":type",		IMAGE_SYMBOL_VALUE,			1},
-  {":canvas-id",	IMAGE_SYMBOL_VALUE,			1},
+  /* TODO: Update all tests with canvas :id */
+  {":id",	        IMAGE_SYMBOL_VALUE,			1},
   {":file",		IMAGE_STRING_VALUE,			0},
   {":data",		IMAGE_DONT_CHECK_VALUE_TYPE,		0},
   {":data-width",	IMAGE_POSITIVE_INTEGER_VALUE,		1},
@@ -5725,6 +5726,15 @@ canvas_prepare_for_display (struct frame *f, struct image *img)
   img->refresh = c->refresh;
   uint32_t* src = c->data;
   int width = c->width, height = c->height;
+
+  /* If canvas has been resized and image is stale, bale out and wait
+     for redisplay.  See also bug#6426 mentioned in uncache_image.  */
+  if (width != img->original_width || height != img->original_height)
+    {
+      SET_FRAME_GARBAGED (f);
+      unblock_input ();
+      return;
+    }
 
 #ifdef USE_CAIRO
   /* Cairo: Optimized canvas reloading. Reuse the existing Cairo surface.  */
