@@ -121,7 +121,7 @@ struct canvas
   /* Dimension of the canvas */
   int width, height;
   /* Pinned pixel memory buffer in ARGB32 format */
-  uint32_t *pixel; /* TODO: Rename to data */
+  uint32_t *data;
 };
 
 static void canvas_prepare_for_display (struct frame *f, struct image *img);
@@ -5530,7 +5530,7 @@ canvas_free_unused (void)
       else
 	{
 	  *p = c->next;
-	  xfree (c->pixel);
+	  xfree (c->data);
 	  xfree (c);
         }
     }
@@ -5567,7 +5567,7 @@ canvas_apply_data (struct canvas *c, struct image_keyword *fmt)
 	  return;
 	}
 
-      memcpy (c->pixel, SDATA (data), expected_bytes);
+      memcpy (c->data, SDATA (data), expected_bytes);
     }
   else if (VECTORP (data)) /* Vector of ARGB32 integers.  */
     {
@@ -5586,7 +5586,7 @@ canvas_apply_data (struct canvas *c, struct image_keyword *fmt)
 	      image_error ("Canvas: expected fixnum in the vector");
 	      return;
 	    }
-	  c->pixel[i] = XFIXNUM (pixel);
+	  c->data[i] = XFIXNUM (pixel);
 	}
     }
 
@@ -5617,7 +5617,7 @@ canvas_apply_data (struct canvas *c, struct image_keyword *fmt)
 	}
 
       if (nbytes == expected_bytes)
-	memcpy (c->pixel, buf, expected_bytes);
+	memcpy (c->data, buf, expected_bytes);
       else
 	image_error ("Canvas :file size mismatch for %s", file);
 
@@ -5652,7 +5652,7 @@ canvas_get (Lisp_Object image, struct image_keyword *fmt)
       c->refresh = 2;
       c->width = width;
       c->height = height;
-      c->pixel = xzalloc (4 * width * height);
+      c->data = xzalloc (4 * width * height);
 
       /* Register the canvas in the list and the map. */
       c->next = canvas_list;
@@ -5667,7 +5667,7 @@ canvas_get (Lisp_Object image, struct image_keyword *fmt)
       /* Resize canvas. */
       c->width = width;
       c->height = height;
-      c->pixel = xrealloc (c->pixel, 4 * width * height);
+      c->data = xrealloc (c->data, 4 * width * height);
 
       /* Initialize pixel buffer from :data or :file if supplied. */
       canvas_apply_data (c, fmt);
@@ -5712,7 +5712,7 @@ canvas_prepare_for_display (struct frame *f, struct image *img)
 
   struct canvas *c = XFIXNUMPTR (img->lisp_data);
   img->refresh = c->refresh;
-  uint32_t* src = c->pixel;
+  uint32_t* src = c->data;
   int width = c->width, height = c->height;
 
 #ifdef USE_CAIRO
@@ -5807,10 +5807,11 @@ canvas_prepare_for_display (struct frame *f, struct image *img)
   unblock_input ();
 }
 
-/* Access canvas buffer. */
+/* Access canvas buffer.  Note that the pixel buffer
+ is valid only as long as its dimensions have not been changed.*/
 
 uint32_t*
-canvas_pixel (Lisp_Object image)
+canvas_data (Lisp_Object image)
 {
   struct image_keyword fmt[CANVAS_LAST];
   struct canvas* c = canvas_get (image, fmt);
@@ -5818,7 +5819,7 @@ canvas_pixel (Lisp_Object image)
   if (!c)
     error ("Not a canvas");
 
-  return c->pixel;
+  return c->data;
 }
 
 DEFUN ("canvas-refresh", Fcanvas_refresh, Scanvas_refresh, 1, 2, 0,

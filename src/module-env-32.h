@@ -7,6 +7,5 @@
      ARGB32.  The pointer will be valid as long as CANVAS is alive.
      Return NULL in case error.   */
 /* TODO: Document that buffer is only valid as long as CANVAS is alive and size does not change. */
-/* TODO: Rename to canvas_data everywhere */
-  uint32_t* (*canvas_pixel) (emacs_env *env, emacs_value canvas)
+  uint32_t* (*canvas_data) (emacs_env *env, emacs_value canvas)
     EMACS_ATTRIBUTE_NONNULL(1);

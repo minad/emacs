@@ -3721,7 +3721,7 @@ extern void update_redisplay_ticks (int, struct window *);
 
 /* Defined in image.c */
 
-extern uint32_t* canvas_pixel (Lisp_Object);
+extern uint32_t* canvas_data (Lisp_Object);
 
 #ifdef HAVE_WINDOW_SYSTEM
 
