@@ -5461,6 +5461,7 @@ xbm_load (struct frame *f, struct image *img)
 enum canvas_keyword_index
 {
   CANVAS_TYPE,
+  CANVAS_ID,
   CANVAS_FILE,
   CANVAS_DATA,
   CANVAS_WIDTH,
@@ -5477,6 +5478,7 @@ enum canvas_keyword_index
 static const struct image_keyword canvas_format[CANVAS_LAST] =
 {
   {":type",		IMAGE_SYMBOL_VALUE,			1},
+  {":canvas-id",	IMAGE_SYMBOL_VALUE,			1},
   {":file",		IMAGE_STRING_VALUE,			0},
   {":data",		IMAGE_DONT_CHECK_VALUE_TYPE,		0},
   {":data-width",	IMAGE_POSITIVE_INTEGER_VALUE,		1},
