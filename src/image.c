@@ -5717,21 +5717,21 @@ canvas_load (struct frame *f, struct image *img)
 static void
 canvas_prepare_for_display (struct frame *f, struct image *img)
 {
-  block_input ();
-
   struct canvas *c = XFIXNUMPTR (img->lisp_data);
   img->refresh = c->refresh;
   uint32_t* src = c->data;
   int width = c->width, height = c->height;
 
-  /* If canvas has been resized and image is stale, bale out and wait
-     for redisplay.  See also bug#6426 mentioned in uncache_image.  */
+  /* If canvas has been resized in the meantime and the image is stale,
+     mark frame as garbaged and wait for redisplay.  See also
+     uncache_image which handles stale images.  */
   if (width != img->original_width || height != img->original_height)
     {
       SET_FRAME_GARBAGED (f);
-      unblock_input ();
       return;
     }
+
+  block_input ();
 
 #ifdef USE_CAIRO
   /* Cairo: Optimized canvas reloading. Reuse the existing Cairo surface.  */
@@ -5792,14 +5792,12 @@ canvas_prepare_for_display (struct frame *f, struct image *img)
       gui_put_x_image (f, ximg, img->pixmap, width, height);
       image_destroy_x_image (ximg);
     }
-
 #elif defined HAVE_NS
   /* MacOS: Recreates and fills the pixmap */
   img->pixmap = ns_image_reset(img->pixmap, width, height);
   for (int y = 0; y < height; ++y)
     for (int x = 0; x < width; ++x)
       PUT_PIXEL (img->pixmap, x, y, src[y * width + x]);
-
 #else
   /* Platform independent canvas reloading.  Less efficient, since it recreates images and pixmaps. */
   FRAME_TERMINAL (f)->free_pixmap (f, img->pixmap);
