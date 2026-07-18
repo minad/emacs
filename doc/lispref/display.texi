@@ -6024,7 +6024,7 @@ displayed (@pxref{Display Feature Testing}).
 * Defining Images::     Convenient ways to define an image for later use.
 * Showing Images::      Convenient ways to display an image once it is defined.
 * Multi-Frame Images::  Some images contain more than one frame.
-* Canvas Images::       Easily modifiable image format with an ARGB32 pixel buffer.
+* Canvas Images::       Easily modifiable image with an ARGB32 pixel buffer.
 * Image Cache::         Internal mechanisms of image display.
 @end menu
 
@@ -7513,6 +7513,9 @@ So, the above canvas can also be created as follows:
                               :data-height 600))
 @end lisp
 
+If the above values for the dimensions change, then Emacs will readjust the
+underlying pixel buffer and resize the canvas automatically.
+
 Other image properties like @code{:scale}, @code{:margin}, @code{:relief},
 @code{:transform-smoothing} and @code{:map} are supported.
 @xref{Image Descriptors} for further details on these properties.
@@ -7526,12 +7529,11 @@ string or overlay:
 @end lisp
 
 Once a canvas image object has been created and displayed, it can be
-``refreshed'' via @code{canvas-refresh}.  Additionally, if the
-@code{:data} vector was mutated or the @code{:file} content has changed
-then an optional non-@code{nil} argument passed to @code{canvas-refresh}
-will ensure that the image data is reloaded.
+``refreshed'' via @code{canvas-refresh}. If a optioal non-@code{nil}
+argument is passed to @code{canvas-refresh} then Emacs will reload the
+@code{:data} or @code{:file} before redrawing the canvas.
 
-The following code will refresh the canvas by reloading the data or file:
+The following code refreshes the canvas by reloading the data or file:
 
 @lisp
 (canvas-refresh my-canvas t)

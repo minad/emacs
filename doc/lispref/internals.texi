@@ -2035,12 +2035,11 @@ The following functions allow you to operate on canvas image objects with dynami
 @deftypefn Function uint32_t *canvas_data (emacs_env *@var{env}, emacs_value @var{canvas})
 The function gives access to the pixel buffer.  The pixel buffer
 (of ARGB32 format) is in row-major order with a size @var{width} * @var{height}.
-The pointer will be valid as long as the object @var{canvas} is alive.
 @end deftypefn
 
-Note that the pixel buffer is only valid as the canvas object is alive and it's
-dimensions have not been changed. If it has changed, Emacs will update the pixel
-buffer and thus automatically resizing the canvas.
+Note that the pixel buffer is only valid as the canvas object is alive and its
+dimensions have not been changed. If it has changed, Emacs will create a new pixel
+buffer and automatically resize the canvas.
 
 Once we update the canvas pixel buffer via dynamic modules, we also have
 to call @code{canvas-refresh} for Emacs to redisplay the canvas.  This
