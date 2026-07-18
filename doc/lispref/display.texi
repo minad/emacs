@@ -7499,6 +7499,10 @@ The image specification uniquely identifies a canvas image object.  The
 properties @code{:data-width} and @code{:data-height} are mandatory, and
 both must be positive integers.
 
+TODO Document that :id symbol is also mandatory, describe that it must
+be unique. If create-image is used :id must not be specified since it is
+automatically added.
+
 Like other images, canvases can also be created via @code{create-image}
 by either providing ARGB32 data as a fixnum vector or as an unibyte string
 in @code{:data}.  Path to a file containing the ARGB32 data in @code{:file}

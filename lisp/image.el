@@ -562,8 +562,9 @@ Images should not be larger than specified by `max-image-size'."
                  (not (plist-get props :map)))
         (setq image (nconc image (list :map
                                        (image--compute-map image)))))
+      ;; Add unique canvas id if not already present
       (when (eq type 'canvas)
-        (setq image (nconc image (list :canvas-id (gensym)))))
+        (setq image (nconc image (list :id (gensym)))))
       image)))
 
 (defun image--default-smoothing (image)
