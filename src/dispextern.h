@@ -3289,13 +3289,18 @@ struct image
      valid, respectively. */
   bool_bf background_valid : 1, background_transparent_valid : 1;
 
-  /* Width and height of the image.  These values depend on
-     the :scale or :rotation image parameters.  */
-  int width, height;
+  /* Refresh counter reflecting the current version of the image.
+     Always larger than zero for images which may need refreshing.
+     Right now it is only used by canvas images.  */
+  uint32_t refresh;
 
   /* The original width and height of the image before transformations
      like scaling or rotation.  */
   int original_width, original_height;
+
+  /* Width and height of the image.  These values depend on
+     the :scale or :rotation image parameters.  */
+  int width, height;
 
   /* The scale factor applied to the image.  */
   double scale;
@@ -3350,11 +3355,6 @@ struct image
 
   /* Image id of this image.  */
   ptrdiff_t id;
-
-  /* Refresh counter reflecting the current version of the image.
-     Always larger than zero for images which may need refreshing.
-     Right now it is only used by canvas images.  */
-  uint32_t refresh;
 
   /* Hash collision chain.  */
   struct image *next, *prev;
