@@ -5502,18 +5502,16 @@ canvas_image_p (Lisp_Object object)
   struct image_keyword fmt[CANVAS_LAST];
   memcpy (fmt, canvas_format, sizeof fmt);
 
-  if (parse_image_spec (object, fmt, CANVAS_LAST, Qcanvas)
-      && fmt[CANVAS_FILE].count + fmt[CANVAS_DATA].count <= 1)
-    {
-      ptrdiff_t w = XFIXNAT (fmt[CANVAS_WIDTH].value);
-      ptrdiff_t h = XFIXNAT (fmt[CANVAS_HEIGHT].value);
+  /* Check that only one of :data or :file is present. */
+  if (!parse_image_spec (object, fmt, CANVAS_LAST, Qcanvas)
+      || fmt[CANVAS_FILE].count + fmt[CANVAS_DATA].count > 1)
+    return false;
 
-      /* Check that w*h*4 does not overflow */
-      if (w <= INT_MAX / 4 / h)
-	return true;
-    }
+  ptrdiff_t w = XFIXNAT (fmt[CANVAS_WIDTH].value);
+  ptrdiff_t h = XFIXNAT (fmt[CANVAS_HEIGHT].value);
 
-  return false;
+  /* Check that w*h*4 does not overflow */
+  return w <= INT_MAX / 4 / h;
 }
 
 /* Clear canvas list. All canvases which are not referenced anymore in
