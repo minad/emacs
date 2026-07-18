@@ -590,6 +590,18 @@ See Bug#36226."
 
 ;;; Canvas tests
 
+(defun test-canvas-gen-file (width height pixel)
+  (let* ((bytes (unibyte-string (logand pixel #xff)
+                                (logand (ash pixel -8) #xff)
+                                (logand (ash pixel -16) #xff)
+                                (logand (ash pixel -24) #xff)))
+         (coding-system-for-write 'binary))
+    (with-temp-file "data/image/canvas-argb"
+      (set-buffer-multibyte nil)
+      (dotimes (_ (* width height))
+        (insert bytes)))
+    t))
+
 (ert-deftest mod-test-canvas/valid ()
   ;; TODO Do not use square canvas here.
   (let* ((canvas '(image :type canvas :data-width 100 :data-height 100))
