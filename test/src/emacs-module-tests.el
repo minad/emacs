@@ -603,12 +603,12 @@ See Bug#36226."
     t))
 
 (ert-deftest mod-test-canvas/valid ()
-  ;; TODO Do not use square canvas here.
-  (let* ((canvas '(image :type canvas :data-width 100 :data-height 100))
-         (hash-before (mod-test-canvas-read canvas 100 100)))
+  (let* ((width 128) (height 215)
+         (canvas `(image :type canvas :data-width ,width :data-height ,height))
+         (hash-before (mod-test-canvas-read canvas width height)))
     (should (integerp hash-before))
-    (should (mod-test-canvas-write canvas 100 100))
-    (let ((hash-after (mod-test-canvas-read canvas 100 100)))
+    (should (mod-test-canvas-write canvas width height))
+    (let ((hash-after (mod-test-canvas-read canvas width height)))
       (should (integerp hash-after))
       (should (not (eql hash-before hash-after))))))
 
@@ -617,92 +617,89 @@ See Bug#36226."
   (should-error (mod-test-canvas-write nil nil nil))
   (should (mod-test-canvas-invalid nil))
   (should (mod-test-canvas-invalid '(image :type xbm :data "")))
-  ;; TODO Do not use square canvas here.
-  (should-error (mod-test-canvas-read '(image :type canvas) 100 100))
-  (should-error (mod-test-canvas-write '(image :type canvas) 100 100)))
+  (should-error (mod-test-canvas-read '(image :type canvas) 256 527))
+  (should-error (mod-test-canvas-write '(image :type canvas) 256 527)))
 
 (ert-deftest mod-test-canvas/vector ()
-  ;; TODO Do not use square canvas here.
-  (let* ((canvas `(image :type canvas
-                         :data-width 100 :data-height 100
-                         :data ,(make-vector (* 100 100) #xFFFF0000)))
-         (hash-before (mod-test-canvas-read canvas 100 100)))
+  (let* ((width 327) (height 98)
+         (canvas `(image :type canvas
+                         :data-width ,width :data-height ,height
+                         :data ,(make-vector (* width height) #xFFFF0000)))
+         (hash-before (mod-test-canvas-read canvas width height)))
     (should (integerp hash-before))
-    (should (mod-test-canvas-write canvas 100 100))
-    (should (not (eql (mod-test-canvas-read canvas 100 100) hash-before))))
+    (should (mod-test-canvas-write canvas width height))
+    (should (not (eql (mod-test-canvas-read canvas width height) hash-before))))
   ;; Mismatched sizes: passing wrong width/height should error.
-  (let ((canvas `(image :type canvas
-                        :data-width 100 :data-height 100
-                        :data ,(make-vector (* 100 100) #xFFFF0000))))
-    (should-error (mod-test-canvas-read canvas 50 50))
-    (should-error (mod-test-canvas-write canvas 200 200))))
+  (let* ((width 327) (height 98)
+        (canvas `(image :type canvas
+                        :data-width ,width :data-height ,height
+                        :data ,(make-vector (* width height) #xFFFF0000))))
+    (should-error (mod-test-canvas-read canvas 501 72))
+    (should-error (mod-test-canvas-write canvas 187 210))))
 
 (ert-deftest mod-test-canvas/vector-reload ()
-  ;; TODO Do not use square canvas here.
-  (let* ((test-vector (make-vector (* 100 100) #xFFFF0000))
+  (let* ((width 198) (height 720)
+         (test-vector (make-vector (* width height) #xFFFF0000))
          (canvas `(image :type canvas
-                         :data-height 100 :data-width 100
+                         :data-width ,width :data-height ,height
                          :data ,test-vector))
-         (hash-initial (mod-test-canvas-read canvas 100 100)))
+         (hash-initial (mod-test-canvas-read canvas width height)))
     (should (integerp hash-initial))
     (dotimes (i 50)
       (aset test-vector i #xFFFFFFFF))
     (canvas-refresh canvas t)
-    (let ((hash-mutated (mod-test-canvas-read canvas 100 100)))
+    (let ((hash-mutated (mod-test-canvas-read canvas width height)))
       (should (integerp hash-mutated))
       (should (not (eql hash-initial hash-mutated))))))
 
 (ert-deftest mod-test-canvas/unibyte ()
-  ;; TODO Do not use square canvas here.
-  (let* ((pixel (unibyte-string #xFF #x80 #x40 #x80))
-         (string-data (apply #'concat (make-list (* 100 100) pixel)))
+  (let* ((width 458) (height 278)
+         (pixel (unibyte-string #xFF #x80 #x40 #x80))
+         (string-data (apply #'concat (make-list (* width height) pixel)))
          (canvas `(image :type canvas
-                         :data-width 100 :data-height 100
+                         :data-width ,width :data-height ,height
                          :data ,string-data))
-         (hash-before (mod-test-canvas-read canvas 100 100)))
+         (hash-before (mod-test-canvas-read canvas width height)))
     (should (integerp hash-before))
-    (should (mod-test-canvas-write canvas 100 100))
-    (should (not (eql (mod-test-canvas-read canvas 100 100) hash-before))))
+    (should (mod-test-canvas-write canvas width height))
+    (should (not (eql (mod-test-canvas-read canvas width height) hash-before))))
   ;; Mismatched sizes: passing wrong width/height should error.
-  ;; TODO Do not use square canvas here.
-  (let* ((pixel (unibyte-string #xFF #x80 #x40 #x80))
-         (string-data (apply #'concat (make-list (* 100 100) pixel)))
+  (let* ((width 458) (height 278)
+         (pixel (unibyte-string #xFF #x80 #x40 #x80))
+         (string-data (apply #'concat (make-list (* width height) pixel)))
          (canvas `(image :type canvas
-                         :data-width 100 :data-height 100
+                         :data-width ,width :data-height ,height
                          :data ,string-data)))
-    (should-error (mod-test-canvas-read canvas 50 50))
-    (should-error (mod-test-canvas-write canvas 200 200))))
+    (should-error (mod-test-canvas-read canvas 76 38))
+    (should-error (mod-test-canvas-write canvas 378 453))))
 
 (ert-deftest mod-test-canvas/file ()
-  ;; TODO Do not use square canvas here.
-  (let* ((canvas (create-image "../data/image/canvas-argb"
+  ;; Generate the canvas data file
+  (test-canvas-gen-file 128 98 #x808000000)
+  (let* ((width 128) (height 98)
+         (canvas (create-image "../data/image/canvas-argb"
                                'canvas nil
-                               :data-width 100 :data-height 100))
-         (hash-before (mod-test-canvas-read canvas 100 100)))
+                               :data-width width :data-height height))
+         (hash-before (mod-test-canvas-read canvas width height)))
     (should (integerp hash-before))
-    (should (mod-test-canvas-write canvas 100 100))
-    (should (not (eql (mod-test-canvas-read canvas 100 100) hash-before))))
+    (should (mod-test-canvas-write canvas width height))
+    (should (not (eql (mod-test-canvas-read canvas width height) hash-before))))
   ;; Mismatched sizes: passing wrong width/height should error.
-  ;; TODO Do not use square canvas here.
   (let ((canvas (create-image "../data/image/canvas-argb"
                               'canvas nil
-                              :data-width 100 :data-height 100)))
-    (should-error (mod-test-canvas-read canvas 50 50))
-    (should-error (mod-test-canvas-write canvas 200 200))))
+                              :data-width 128 :data-height 98)))
+    (should-error (mod-test-canvas-read canvas 28 76))
+    (should-error (mod-test-canvas-write canvas 398 712))))
 
 (ert-deftest mod-test-canvas/gc-stress ()
   "Allocate canvases in batches with GC between batches.
 Verifies that canvas pixel buffers are freed correctly and do not
 cause use-after-free crashes or GC assertion failures."
-  ;; TODO Do not use square canvas here.
   (dotimes (_ 5)
     (dotimes (_ 20)
-      (let* ((canvas '(image :type canvas :data-width 50 :data-height 50))
-             (hash (mod-test-canvas-read canvas 50 50)))
+      (let* ((canvas '(image :type canvas :data-width 78 :data-height 342))
+             (hash (mod-test-canvas-read canvas 78 342)))
         (should (integerp hash))))
     (garbage-collect)))
-
-;; TODO Add new canvas-32.diff to https://github.com/minad/emacs-canvas-patch
-;; TODO Add new canvas-31.diff to https://github.com/minad/emacs-canvas-patch
 
 ;;; emacs-module-tests.el ends here
