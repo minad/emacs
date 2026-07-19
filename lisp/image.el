@@ -1389,6 +1389,9 @@ changing the displayed image size does not affect the saved image."
             (if (not (file-exists-p file))
                 (error "File %s no longer exists" file)
               (insert-file-contents-literally file))
+          ;; TODO Check type of :data here, only accept strings and
+          ;; vectors of fixnums, otherwise error. Add code which writes
+          ;; fixnum vector.
           (insert (plist-get (cdr image) :data))))
       (write-region (point-min) (point-max)
                     (read-file-name "Write image to file: ")))))
