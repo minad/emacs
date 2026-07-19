@@ -6,7 +6,7 @@
      major order and has the size width * height.  The pixel format is
      ARGB32 on all platforms.  The pointer will be valid as long as
      CANVAS is alive, and as long as its dimensions have not been
-     changed.  Return NULL in case error.   */
+     changed.  Return NULL in case of error.   */
 
   uint32_t* (*canvas_data) (emacs_env *env, emacs_value canvas)
     EMACS_ATTRIBUTE_NONNULL(1);
