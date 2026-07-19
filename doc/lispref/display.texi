@@ -6024,7 +6024,7 @@ displayed (@pxref{Display Feature Testing}).
 * Defining Images::     Convenient ways to define an image for later use.
 * Showing Images::      Convenient ways to display an image once it is defined.
 * Multi-Frame Images::  Some images contain more than one frame.
-* Canvas Images::       Easily modifiable image with an ARGB32 pixel buffer.
+* Canvas Images::       Easily modifiable image with a pixel buffer.
 * Image Cache::         Internal mechanisms of image display.
 @end menu
 
@@ -7480,10 +7480,10 @@ if there is one.
 @subsection Canvas Images
 @cindex canvas image
 
-Canvas images have an associated writeable ARGB32 pixel buffer.  They
-can be used by dynamic modules to efficiently display and update images,
-for example by document viewers, visualization tools, dynamically
-computed animations or games.
+Canvas images have an associated writeable pixel buffer in ARGB32 format
+on all platforms.  They can be used by dynamic modules to efficiently
+display and update images, for example by document viewers,
+visualization tools, dynamically computed animations or games.
 
 An image specifier with @code{:type canvas} creates a canvas, for instance
 as follows:
