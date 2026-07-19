@@ -7480,10 +7480,10 @@ if there is one.
 @subsection Canvas Images
 @cindex canvas image
 
-Canvas images have an associated writeable pixel buffer in ARGB32 format
-on all platforms.  They can be used by dynamic modules to efficiently
-display and update images, for example by document viewers,
-visualization tools, dynamically computed animations or games.
+Canvas images can be used to efficiently display and update images, for
+example by document viewers, visualization tools, dynamically computed
+animations or games.  Canvas images have an associated writeable pixel
+buffer in ARGB32 format on all platforms.
 
 An image specifier with @code{:type canvas} creates a canvas, for instance
 as follows:
