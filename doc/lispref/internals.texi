@@ -2034,8 +2034,9 @@ The following functions allow you to operate on canvas image objects with dynami
 @anchor{canvas_data}
 @deftypefn Function uint32_t *canvas_data (emacs_env *@var{env}, emacs_value @var{canvas})
 The function gives access to the pixel buffer of @var{canvas}.  The
-pixel buffer is in row-major order with a size @var{width} *
-@var{height}.  The pixel format is ARGB32 on all platforms.
+pixel buffer is in row-major order with a size @var{width} * @var{height}.
+The pixel format is ARGB32 on all platforms.  Return @code{NULL} in case
+of error.
 @end deftypefn
 
 Note that the pixel buffer is only valid as the canvas object is alive
