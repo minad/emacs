@@ -1382,17 +1382,22 @@ is recomputed to fit the newly transformed image."
 This writes the original image data to a file.  Rotating or
 changing the displayed image size does not affect the saved image."
   (interactive)
-  (let ((image (image--get-image)))
+  (let* ((image (image--get-image))
+         (file (plist-get (cdr image) :file))
+         (data (plist-get (cdr image) :data)))
     (with-temp-buffer
-      (let ((file (plist-get (cdr image) :file)))
-        (if file
-            (if (not (file-exists-p file))
-                (error "File %s no longer exists" file)
-              (insert-file-contents-literally file))
-          ;; TODO Check type of :data here, only accept strings and
-          ;; vectors of fixnums, otherwise error. Add code which writes
-          ;; fixnum vector.
-          (insert (plist-get (cdr image) :data))))
+      (cond
+       (file
+        (if (not (file-exists-p file))
+            (error "File %s no longer exists" file)
+          (insert-file-contents-literally file)))
+       ((stringp data)
+        (insert data))
+       ((and (vectorp data) (> (length data) 0) (fixnump (aref data 0)))
+        ;; TODO write argb32 data here
+        ;; (insert data)
+        )
+       (t (error "Image :data cannot be saved")))
       (write-region (point-min) (point-max)
                     (read-file-name "Write image to file: ")))))
 
