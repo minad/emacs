@@ -32,11 +32,11 @@ applies, and please also update docstrings as needed.
 
 +++
 ** Support for canvas image objects.
-An image specifier with ':type canvas' creates a canvas image.  The
-canvas has an associated writable pixel buffer in ARGB32 format.  The
-dynamic module function 'canvas_data' gives access to the pixel buffer.
-After changing the ':data' vector or writing to the pixel buffer, call
-'canvas-refresh' to redraw all canvas images.
+Canvas images support efficient updating and refreshing.  An image
+specifier with ':type canvas' creates a canvas image.  The canvas has an
+associated writable pixel buffer.  After changing the ':data' vector or
+writing to the pixel buffer a call to 'canvas-refresh' redraws all
+canvas images.
 
 ---
 ** Emacs no longer kills child processes after EPIPE.

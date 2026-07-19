@@ -112,15 +112,15 @@ static unsigned long image_alloc_image_color (struct frame *, struct image *,
 
 struct canvas
 {
-  /* Linked list of canvases */
+  /* Linked list of canvases, see `canvas_list'.  */
   struct canvas *next;
-  /* Is the canvas used? */
+  /* Is the canvas used?  */
   bool used;
-  /* Incremented if the canvas should be redrawn. Always larger than 0. */
+  /* Incremented if the canvas should be redrawn. Always larger than 0.  */
   uint32_t refresh;
-  /* Dimension of the canvas */
+  /* Dimension of the canvas.  */
   int width, height;
-  /* Pinned pixel memory buffer in ARGB32 format */
+  /* Pixel memory buffer in ARGB32 format across all platforms.  */
   uint32_t *data;
 };
 
@@ -5545,10 +5545,10 @@ canvas_free_unused (void)
 
 /* Copy pixel data into canvas C from a parsed image keyword array FMT.
 
-   :data must be an unibyte string of exactly 4*WIDTH*HEIGHT bytes in
-   ARGB32 format, or a vector of size WIDTH*HEIGHT in row-major order,
-   where each element is a 32 bit integer. :file names a binary file in
-   ARGB32 format of size 4*WIDTH*HEIGHT bytes. */
+   :data must be an unibyte string of exactly 4*WIDTH*HEIGHT bytes, or a
+   vector of size WIDTH*HEIGHT in row-major order, where each element is
+   a 32 bit integer. :file names a binary file with size 4*WIDTH*HEIGHT
+   bytes. */
 
 static void
 canvas_apply_data (struct canvas *c, struct image_keyword *fmt)
