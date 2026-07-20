@@ -32841,7 +32841,7 @@ static void redraw_image_glyphs_window (struct window *w, Lisp_Object spec)
     {
       struct glyph_row *row = w->current_matrix->rows + y;
       if (row->enabled_p)
-	  {
+	{
 	  int start = row->x;
 	  for (int x = 0; x < row->used[TEXT_AREA]; ++x)
 	    {

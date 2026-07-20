@@ -752,14 +752,14 @@ Fmod_test_make_string (emacs_env *env, ptrdiff_t nargs,
   return ret;
 }
 
-// canvas djb2 hash
+/* djb2 hash over all the pixels */
 
 static uint32_t
 canvas_hash (uint32_t *buf, int width, int height)
 {
   uint32_t hash = 5381;
 
-  for (int i = 0; i < width *height; i++)
+  for (int i = 0; i < width * height; i++)
     hash = hash * 33 ^ buf[i];
 
   return hash;
