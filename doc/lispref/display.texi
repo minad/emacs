@@ -7480,10 +7480,12 @@ if there is one.
 @subsection Canvas Images
 @cindex canvas image
 
-Canvas images can be used to efficiently display and update images, for
-example by document viewers, visualization tools, dynamically computed
+Canvas images can be updated and displayed efficiently with high frame rates,
+for example by document viewers, visualization tools, dynamically computed
 animations or games.  Canvas images have an associated writeable pixel
-buffer in ARGB32 format on all platforms.
+buffer in ARGB32 format on all platforms.  Unlike other image types supported
+in Emacs, canvas images do not require creating a new Emacs Lisp object
+everytime they get updated.
 
 An image specifier with @code{:type canvas} creates a canvas, for instance
 as follows:
