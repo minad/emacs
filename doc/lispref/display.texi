@@ -7519,14 +7519,15 @@ where the data is initially loaded from a file, or from a vector:
                                   :data-height 600))
 @end lisp
 
-If the above values for the dimensions change, then Emacs will readjust the
-underlying pixel buffer and resize the canvas automatically.
+If the values for dimensions change (i.e., @code{:data-height} or
+@code{:data-width}), then Emacs will automatically adjust the underlying
+pixel buffer and resize the canvas.
 
 Other image properties like @code{:scale}, @code{:margin}, @code{:relief},
 @code{:transform-smoothing} and @code{:map} are supported.
 @xref{Image Descriptors} for further details on these properties.
 
-In order to display the canvas, specify it as display property of a
+In order to display the canvas, specify it as the display property of a
 string or overlay:
 
 @lisp
