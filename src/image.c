@@ -114,14 +114,12 @@ struct canvas
 {
   /* Linked list of canvases, see `canvas_list'.  */
   struct canvas *next;
-  /* Is the canvas used?  */
-  bool used;
+  /* Pixel memory buffer in ARGB32 format across all platforms.  */
+  uint32_t *data;
   /* Incremented if the canvas should be redrawn. Always larger than 0.  */
   uint32_t refresh;
   /* Dimension of the canvas.  */
   int width, height;
-  /* Pixel memory buffer in ARGB32 format across all platforms.  */
-  uint32_t *data;
 };
 
 static void canvas_prepare_for_display (struct frame *f, struct image *img);
@@ -5520,19 +5518,19 @@ canvas_image_p (Lisp_Object object)
 static void
 canvas_free_unused (void)
 {
-  /* Mark all referenced canvases as used.  */
+  /* Mark all referenced canvases as used (negative width).  */
   DOHASH (XHASH_TABLE (canvas_map), k, v)
-    ((struct canvas *)XFIXNUMPTR (v))->used = 1;
+    ((struct canvas *)XFIXNUMPTR (v))->width *= -1;
 
   /* Free unreferenced canvases and remove them from the list.  */
   struct canvas **p = &canvas_list;
   while (*p)
     {
       struct canvas *c = *p;
-      if (c->used)
+      if (c->width < 0)
         {
 	  p = &c->next;
-	  c->used = 0;
+	  c->width *= -1;
 	}
       else
 	{
