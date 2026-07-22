@@ -5680,6 +5680,7 @@ canvas_get (Lisp_Object image, struct image_keyword *fmt)
       c->width = width;
       c->height = height;
       c->data = xrealloc (c->data, 4 * width * height);
+      memset (c->data, 0, 4 * width * height);
 
       /* Initialize pixel buffer from :data or :file if supplied. */
       canvas_apply_data (c, fmt);
