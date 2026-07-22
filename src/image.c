@@ -5492,13 +5492,12 @@ static Lisp_Object canvas_map;
 
 static struct canvas* canvas_list = 0;
 
-/* Return true if OBJECT is a valid canvas image specification.  */
+/* Parse canvas specification OBJECT and return true if valid.  */
 
 static bool
-canvas_image_p (Lisp_Object object)
+canvas_parse (Lisp_Object object, struct image_keyword *fmt)
 {
-  struct image_keyword fmt[CANVAS_LAST];
-  memcpy (fmt, canvas_format, sizeof fmt);
+  memcpy (fmt, canvas_format, sizeof canvas_format);
 
   /* Check that only one of :data or :file is present. */
   if (!parse_image_spec (object, fmt, CANVAS_LAST, Qcanvas)
@@ -5510,6 +5509,15 @@ canvas_image_p (Lisp_Object object)
 
   /* Check that w*h*4 does not overflow */
   return w <= INT_MAX / 4 / h;
+}
+
+/* Return true if OBJECT is a valid canvas image specification.  */
+
+static bool
+canvas_image_p (Lisp_Object object)
+{
+  struct image_keyword fmt[CANVAS_LAST];
+  return canvas_parse (obj, fmt);
 }
 
 /* Clear canvas list. All canvases which are not referenced anymore in
@@ -5635,8 +5643,7 @@ canvas_apply_data (struct canvas *c, struct image_keyword *fmt)
 static struct canvas*
 canvas_get (Lisp_Object image, struct image_keyword *fmt)
 {
-  memcpy (fmt, canvas_format, sizeof canvas_format);
-  if (!parse_image_spec (image, fmt, CANVAS_LAST, Qcanvas))
+  if (!canvas_parse (image, fmt))
     {
       image_error ("Not a canvas image specification");
       return NULL;
