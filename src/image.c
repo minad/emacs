@@ -5517,7 +5517,7 @@ static bool
 canvas_image_p (Lisp_Object object)
 {
   struct image_keyword fmt[CANVAS_LAST];
-  return canvas_parse (obj, fmt);
+  return canvas_parse (object, fmt);
 }
 
 /* Clear canvas list. All canvases which are not referenced anymore in
