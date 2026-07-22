@@ -676,7 +676,7 @@ See Bug#36226."
 
 (ert-deftest mod-test-canvas/file ()
   ;; Generate the canvas data file
-  (test-canvas-gen-file 128 98 #x808000000)
+  (test-canvas-gen-file 128 98 #x80800000)
   (let* ((width 128) (height 98)
          (canvas (create-image "../data/image/canvas-argb"
                                'canvas nil
