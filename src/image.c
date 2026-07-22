@@ -5741,6 +5741,7 @@ canvas_prepare_for_display (struct frame *f, struct image *img)
   /* Cairo: Optimized canvas reloading. Reuse the existing Cairo surface.  */
   cairo_surface_t* surface;
   if (img->cr_data
+      /* prepare_image_for_display ensures that cr_data is a surface pattern */
       && cairo_pattern_get_type (img->cr_data) == CAIRO_PATTERN_TYPE_SURFACE
       && !cairo_pattern_get_surface (img->cr_data, &surface))
     {
