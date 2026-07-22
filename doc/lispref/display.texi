@@ -7498,10 +7498,10 @@ as follows:
           :data-height 600))
 @end lisp
 
-The image specification uniquely identifies a canvas image object.  The
-properties @code{:data-width}, @code{:data-height} and @code{:id} are
-mandatory.  The width and height must both be positive integers and the
-id must be a symbol.
+The image specification object uniquely (with respect to @code{eq})
+identifies a canvas image object.  The properties @code{:data-width},
+@code{:data-height} and @code{:id} are mandatory.  The width and height
+must both be positive integers and the id must be a symbol.
 
 Canvases can be created by either providing ARGB32 data as a vector of
 fixnums or as an unibyte string in @code{:data}.  Path to a file
