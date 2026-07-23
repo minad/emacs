@@ -5580,7 +5580,14 @@ canvas_apply_data (struct canvas *c, struct image_keyword *fmt)
 	  return;
 	}
 
-      memcpy (c->data, SDATA (data), expected_bytes);
+      const uint32_t *buf = (const uint32_t *) SDATA (data);
+#ifdef WORDS_BIGENDIAN
+      for (ptrdiff_t i = 0; i < expected_size; ++i)
+	c->data[i] = bswap_32 (buf[i]);
+#else
+      for (ptrdiff_t i = 0; i < expected_size; ++i)
+	c->data[i] = buf[i];
+#endif
     }
   else if (VECTORP (data)) /* Vector of ARGB32 integers.  */
     {
@@ -5591,7 +5598,7 @@ canvas_apply_data (struct canvas *c, struct image_keyword *fmt)
 	  return;
 	}
 
-      for (int i = 0; i < ASIZE (data); i++)
+      for (ptrdiff_t i = 0; i < expected_size; ++i)
 	{
           Lisp_Object pixel = AREF (data, i);
 	  if (!FIXNUMP (pixel))
@@ -5599,10 +5606,9 @@ canvas_apply_data (struct canvas *c, struct image_keyword *fmt)
 	      image_error ("Canvas: expected fixnum in the vector");
 	      return;
 	    }
-	  c->data[i] = XFIXNUM (pixel);
+	  c->data[i] = (uint32_t) XFIXNUM (pixel);
 	}
     }
-
   else if (STRINGP (file)) /* Binary file with ARGB32 data.  */
     {
       Lisp_Object found = image_find_image_file (file);
@@ -5621,7 +5627,7 @@ canvas_apply_data (struct canvas *c, struct image_keyword *fmt)
 	}
 
       ptrdiff_t nbytes;
-      char *buf = slurp_file (fd, &nbytes);
+      uint32_t *buf = (uint32_t *) slurp_file (fd, &nbytes);
       emacs_close (fd);
       if (!buf)
 	{
@@ -5629,10 +5635,20 @@ canvas_apply_data (struct canvas *c, struct image_keyword *fmt)
 	  return;
 	}
 
-      if (nbytes == expected_bytes)
-	memcpy (c->data, buf, expected_bytes);
-      else
-	image_error ("Canvas :file size mismatch for %s", file);
+      if (nbytes != expected_bytes)
+	{
+	  image_error ("Canvas :file size mismatch for %s", file);
+	  xfree (buf);
+	  return;
+	}
+
+#ifdef WORDS_BIGENDIAN
+      for (ptrdiff_t i = 0; i < expected_size; ++i)
+	c->data[i] = bswap_32 (buf[i]);
+#else
+      for (ptrdiff_t i = 0; i < expected_size; ++i)
+	c->data[i] = buf[i];
+#endif
 
       xfree (buf);
     }
