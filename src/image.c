@@ -5560,7 +5560,6 @@ static void
 canvas_apply_data (struct canvas *c, struct image_keyword *fmt)
 {
   ptrdiff_t expected_size = (ptrdiff_t) c->width * c->height;
-  ptrdiff_t expected_bytes = (ptrdiff_t) 4 * expected_size;
 
   Lisp_Object data = fmt[CANVAS_DATA].value;
   Lisp_Object file = fmt[CANVAS_FILE].value;
@@ -5573,10 +5572,9 @@ canvas_apply_data (struct canvas *c, struct image_keyword *fmt)
 	  return;
 	}
 
-      if (SBYTES (data) != expected_bytes)
+      if (SBYTES (data) != 4 * expected_size)
 	{
-          image_error ("Canvas :data size mismatch: expected %d bytes",
-		       make_fixnum (expected_bytes));
+          image_error ("Canvas :data size mismatch");
 	  return;
 	}
 
@@ -5593,8 +5591,7 @@ canvas_apply_data (struct canvas *c, struct image_keyword *fmt)
     {
       if (ASIZE (data) != expected_size)
 	{
-	  image_error ("Canvas: :data size mismatch: expected vector size %d",
-		       make_fixnum (expected_size));
+	  image_error ("Canvas :data size mismatch");
 	  return;
 	}
 
@@ -5603,7 +5600,7 @@ canvas_apply_data (struct canvas *c, struct image_keyword *fmt)
           Lisp_Object pixel = AREF (data, i);
 	  if (!FIXNUMP (pixel))
 	    {
-	      image_error ("Canvas: expected fixnum in the vector");
+	      image_error ("Expected fixnum in the canvas :data vector");
 	      return;
 	    }
 	  c->data[i] = (uint32_t) XFIXNUM (pixel);
@@ -5635,7 +5632,7 @@ canvas_apply_data (struct canvas *c, struct image_keyword *fmt)
 	  return;
 	}
 
-      if (nbytes != expected_bytes)
+      if (nbytes != 4 * expected_size)
 	{
 	  image_error ("Canvas :file size mismatch for %s", file);
 	  xfree (buf);
