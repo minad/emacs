@@ -5609,7 +5609,7 @@ canvas_apply_data (struct canvas *c, struct image_keyword *fmt)
   else if (STRINGP (file)) /* Binary file with ARGB32 data.  */
     {
       Lisp_Object found = image_find_image_file (file);
-      if (!STRINGP (found))
+      if (NILP (found))
 	{
 	  image_error ("Cannot find image :file to load for canvas %s", file);
 	  return;
