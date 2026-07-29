@@ -5674,7 +5674,7 @@ canvas_get (Lisp_Object image, struct image_keyword *fmt)
       canvas_free_unused ();
 
       c = xzalloc (sizeof (struct canvas));
-      c->refresh = 2;
+      c->refresh = 2; /* 2 in order to enforce first refresh */
       c->width = width;
       c->height = height;
       c->data = xzalloc (4 * width * height);
@@ -5714,7 +5714,7 @@ canvas_load (struct frame *f, struct image *img)
     return false;
 
   img->lisp_data = make_pointer_integer (c);
-  img->refresh = 1;
+  img->refresh = 1; /* refresh is always > 0 for canvas images */
   img->width = c->width;
   img->height = c->height;
   img->background_valid = 1;
