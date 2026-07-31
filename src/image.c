@@ -5861,23 +5861,27 @@ If RELOAD-DATA is non-nil, reload the :data from the image
 specification.
 
 `redisplay' must be called after `canvas-refresh' such that the updated
-canvas is displayed even if double buffering is enabled, for example
-when a canvas is updated in a loop.
+canvas is displayed even if double buffering is enabled.  It can be
+updated in a loop.
 
-  (setq canvas (create-image (make-vector 100 0) 'canvas t
-                             :data-width 10 :data-height 10))
+Example:
 
-  (dotimes (i 100)
+  (setq canvas (create-image (make-vector (* 100 100) 0) 'canvas t
+                             :data-width 100 :data-height 100))
+  (insert (propertize "#" 'display canvas))
+  (dotimes (i (* 100 100))
     (aset (plist-get (cdr canvas) :data) i #xFF)
     (canvas-refresh canvas 'reload-data)
     (redisplay))
 
 When `canvas-refresh' is called from a timer or a command, `redisplay'
-will be called implicitly after the timer or command.  For example:
+will be called implicitly after the timer or command.
+
+Example:
 
   (let ((i 0))
     (run-at-time nil 0.1 (lambda ()
-      (aset (plist-get (cdr canvas) :data) (min i 99) #xFF)
+      (aset (plist-get (cdr canvas) :data) (min i (* 100 100)) #xFF)
       (incf i)
       (canvas-refresh canvas 'reload-data))))  */)
   (Lisp_Object image, Lisp_Object reload_data)
