@@ -5880,7 +5880,7 @@ will be called implicitly after the timer or command.
 Example:
 
   (let ((i 0))
-    (run-at-time nil 0.1 (lambda ()
+    (run-at-time nil 0.03 (lambda ()
       (aset (plist-get (cdr canvas) :data) (min i (* 100 100)) #xFF)
       (incf i)
       (canvas-refresh canvas 'reload-data))))  */)
