@@ -5881,9 +5881,10 @@ Example:
 
   (let ((i 0))
     (run-at-time nil 0.03 (lambda ()
-      (aset (plist-get (cdr canvas) :data) (min i (* 100 100)) #xFF)
-      (incf i)
-      (canvas-refresh canvas 'reload-data))))  */)
+      (when (< i (* 100 100))
+        (aset (plist-get (cdr canvas) :data) i #xFF)
+        (incf i)
+        (canvas-refresh canvas 'reload-data)))))  */)
   (Lisp_Object image, Lisp_Object reload_data)
 {
   struct image_keyword fmt[CANVAS_LAST];
