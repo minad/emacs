@@ -32824,7 +32824,8 @@ append_stretch_glyph (struct it *it, Lisp_Object object,
     IT_EXPAND_MATRIX_WIDTH (it, area);
 }
 
-static void redraw_image_glyphs_window (struct window *w, Lisp_Object spec)
+static void
+redraw_image_glyphs_window (struct window *w, Lisp_Object spec)
 {
   if (w->current_matrix == NULL)
     return;
@@ -32861,7 +32862,8 @@ static void redraw_image_glyphs_window (struct window *w, Lisp_Object spec)
     }
 }
 
-static void redraw_image_glyphs_window_tree (struct window *w, Lisp_Object spec)
+static void
+redraw_image_glyphs_window_tree (struct window *w, Lisp_Object spec)
 {
   while (w)
     {
@@ -32879,7 +32881,8 @@ static void redraw_image_glyphs_window_tree (struct window *w, Lisp_Object spec)
       -> expose_frame -> expose_window_tree -> expose_window
       -> expose_line -> expose_area -> draw_glyphs */
 
-void redraw_image_glyphs (Lisp_Object spec)
+void
+redraw_image_glyphs (Lisp_Object spec)
 {
   Lisp_Object tail, frame;
   FOR_EACH_FRAME (tail, frame)
