@@ -7527,7 +7527,7 @@ pixel buffer and resize the canvas.
 
 Other image properties like @code{:scale}, @code{:margin}, @code{:relief},
 @code{:transform-smoothing} and @code{:map} are supported.
-@xref{Image Descriptors} for further details on these properties.
+@xref{Image Descriptors}, for further details on these properties.
 
 In order to display the canvas, specify it as the display property of a
 string or overlay:
@@ -7552,7 +7552,7 @@ The following code refreshes the canvas by reloading the data or file:
 @end lisp
 
 Canvas images can be manipulated and refreshed via dynamic modules.
-@xref{Module Canvas API} for further details.
+@xref{Module Canvas API}, for further details.
 
 @node Image Cache
 @subsection Image Cache

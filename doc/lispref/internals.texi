@@ -2026,7 +2026,7 @@ I/O,,,libc}.
 
 Emacs supports creating image objects called ``canvas'' which have a
 pixel buffer associated with them.  These image objects can be accessed
-and updated natively via dynamic modules.  @xref{Canvas Images} for what
+and updated natively via dynamic modules.  @xref{Canvas Images}, for what
 they are.
 
 The following functions allow you to operate on canvas image objects
@@ -2064,7 +2064,7 @@ usually be @code{nil}, thus not provided.
 
 Thus, one can simply define a module function that takes as an argument
 a canvas image object, following the specification as laid down in
-@xref{Canvas Images} and then use the above code to manipulate the pixel
+@xref{Canvas Images}, and then use the above code to manipulate the pixel
 buffer of the canvas and redraw it.
 
 @node Module Nonlocal
