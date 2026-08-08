@@ -5907,7 +5907,7 @@ Example:
   /* Redraw all image glyphs.  */
   block_input ();
   redraw_image_glyphs (image);
-  /* We do not call `redisplay' or `flush_frame' here. This means the
+  /* We do not call `redisplay' or `flush_frame' here.  This means the
      canvas images are not updated immediately on screen, since the
      double buffer won't be flipped immediately.  The next call to
      `redisplay' will flip the double buffer.  */
