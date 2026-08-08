@@ -8,5 +8,5 @@
      CANVAS is alive, and as long as its dimensions have not been
      changed.  Return NULL in case of error.   */
 
-  uint32_t* (*canvas_data) (emacs_env *env, emacs_value canvas)
+  uint32_t *(*canvas_data) (emacs_env *env, emacs_value canvas)
     EMACS_ATTRIBUTE_NONNULL(1);

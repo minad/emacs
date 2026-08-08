@@ -5736,7 +5736,7 @@ canvas_prepare_for_display (struct frame *f, struct image *img)
 {
   struct canvas *c = XFIXNUMPTR (img->lisp_data);
   img->refresh = c->refresh;
-  uint32_t* src = c->data;
+  uint32_t *src = c->data;
   int width = c->width, height = c->height;
 
   /* If canvas has been resized in the meantime and the image is stale,

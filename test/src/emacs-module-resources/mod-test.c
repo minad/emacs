@@ -770,7 +770,7 @@ Fmod_test_canvas_read (emacs_env *env, ptrdiff_t nargs,
 		  emacs_value *args, void *data)
 {
   assert (nargs == 3);
-  uint32_t* buf = env->canvas_data (env, args[0]);
+  uint32_t *buf = env->canvas_data (env, args[0]);
 
   if (!buf)
     {
@@ -808,7 +808,7 @@ Fmod_test_canvas_write (emacs_env *env, ptrdiff_t nargs,
 		  emacs_value *args, void *data)
 {
   assert (nargs == 3);
-  uint32_t* buf = env->canvas_data (env, args[0]);
+  uint32_t *buf = env->canvas_data (env, args[0]);
 
   if (!buf)
     {
