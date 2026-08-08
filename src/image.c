@@ -5555,7 +5555,7 @@ canvas_free_unused (void)
    :data must be an unibyte string of exactly 4*WIDTH*HEIGHT bytes, or a
    vector of size WIDTH*HEIGHT in row-major order, where each element is
    a 32 bit integer.  :file names a binary file with size 4*WIDTH*HEIGHT
-   bytes. */
+   bytes.  */
 
 static void
 canvas_apply_data (struct canvas *c, struct image_keyword *fmt)
@@ -5671,21 +5671,21 @@ canvas_get (Lisp_Object image, struct image_keyword *fmt)
   if (!c)
     {
       /* Free old canvases now, when allocating a new one, to keep
-         memory usage low. */
+         memory usage low.  */
       canvas_free_unused ();
 
       c = xzalloc (sizeof (struct canvas));
-      c->refresh = 2; /* 2 in order to enforce first refresh */
+      c->refresh = 2; /* 2 in order to enforce first refresh.  */
       c->width = width;
       c->height = height;
       c->data = xzalloc (4 * width * height);
 
-      /* Register the canvas in the list and the map. */
+      /* Register the canvas in the list and the map.  */
       c->next = canvas_list;
       canvas_list = c;
       Fputhash (image, make_pointer_integer (c), canvas_map);
 
-      /* Initialize pixel buffer from :data or :file if supplied. */
+      /* Initialize pixel buffer from :data or :file if supplied.  */
       canvas_apply_data (c, fmt);
     }
   else if (c->width != width || c->height != height)
@@ -5696,7 +5696,7 @@ canvas_get (Lisp_Object image, struct image_keyword *fmt)
       c->data = xrealloc (c->data, 4 * width * height);
       memset (c->data, 0, 4 * width * height);
 
-      /* Initialize pixel buffer from :data or :file if supplied. */
+      /* Initialize pixel buffer from :data or :file if supplied.  */
       canvas_apply_data (c, fmt);
     }
 
