@@ -5554,7 +5554,7 @@ canvas_free_unused (void)
 
    :data must be an unibyte string of exactly 4*WIDTH*HEIGHT bytes, or a
    vector of size WIDTH*HEIGHT in row-major order, where each element is
-   a 32 bit integer. :file names a binary file with size 4*WIDTH*HEIGHT
+   a 32 bit integer.  :file names a binary file with size 4*WIDTH*HEIGHT
    bytes. */
 
 static void
