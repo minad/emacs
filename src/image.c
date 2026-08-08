@@ -116,7 +116,8 @@ struct canvas
   struct canvas *next;
   /* Memory buffer in ARGB32 format.  The same format on all platforms!  */
   uint32_t *data;
-  /* Incremented if the canvas should be redrawn. Always larger than 0.  */
+  /* Incremented if the canvas should be redrawn.  The value is always
+     greater than 0.  */
   uint32_t refresh;
   /* Dimension of the canvas.  */
   int width, height;
