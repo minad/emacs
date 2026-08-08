@@ -5521,7 +5521,7 @@ canvas_image_p (Lisp_Object object)
   return canvas_parse (object, fmt);
 }
 
-/* Clear canvas list. All canvases which are not referenced anymore in
+/* Clear canvas list.  All canvases which are not referenced anymore in
    the weak hash table canvas_map are freed.  */
 
 static void
