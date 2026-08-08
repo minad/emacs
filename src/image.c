@@ -5860,9 +5860,12 @@ DEFUN ("canvas-refresh", Fcanvas_refresh, Scanvas_refresh, 1, 2, 0,
 If RELOAD-DATA is non-nil, reload the :data from the image
 specification.
 
-`redisplay' must be called after `canvas-refresh' such that the updated
-canvas is displayed even if double buffering is enabled.  It can be
-updated in a loop.
+When `canvas-refresh' is called from a timer or a command, `redisplay'
+will be called implicitly after the timer or command.  `redisplay' must
+be called explicitly after `canvas-refresh' only when the redraw should
+happen from a loop.  See the manual for examples.
+
+TODO Move examples to Lisp manual.
 
 Example:
 
@@ -5873,9 +5876,6 @@ Example:
     (aset (plist-get (cdr canvas) :data) i #xFF)
     (canvas-refresh canvas 'reload-data)
     (redisplay))
-
-When `canvas-refresh' is called from a timer or a command, `redisplay'
-will be called implicitly after the timer or command.
 
 Example:
 
