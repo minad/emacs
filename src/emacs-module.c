@@ -962,7 +962,7 @@ module_vec_size (emacs_env *env, emacs_value vector)
   return ASIZE (lisp);
 }
 
-static uint32_t*
+static uint32_t *
 module_canvas_data (emacs_env *env, emacs_value canvas)
 {
   MODULE_FUNCTION_BEGIN (NULL);

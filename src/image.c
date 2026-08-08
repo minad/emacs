@@ -5842,7 +5842,7 @@ canvas_prepare_for_display (struct frame *f, struct image *img)
 /* Access canvas buffer.  Note that the pixel buffer
  is valid only as long as its dimensions have not been changed.*/
 
-uint32_t*
+uint32_t *
 canvas_data (Lisp_Object image)
 {
   struct image_keyword fmt[CANVAS_LAST];
