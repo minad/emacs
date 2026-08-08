@@ -853,7 +853,7 @@ Fmod_test_canvas_invalid (emacs_env *env, ptrdiff_t nargs,
   uint32_t *buf = env->canvas_data (env, args[0]);
 
    if (env->non_local_exit_check (env) != emacs_funcall_exit_return)
-     env->non_local_exit_clear (env); // don't propagate the error to ERT
+     env->non_local_exit_clear (env); /* Don't propagate the error to ERT */
 
   if (buf)
     {
