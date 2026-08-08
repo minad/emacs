@@ -32824,9 +32824,6 @@ append_stretch_glyph (struct it *it, Lisp_Object object,
     IT_EXPAND_MATRIX_WIDTH (it, area);
 }
 
-/* TODO: This needs testing!!! We to add a new test to the
-   emacs-canvas-patch repository (margin-test.el). Test canvas in margin
-   with calling canvas-refresh. */
 static void
 redraw_image_glyphs_window (struct window *w, Lisp_Object spec)
 {
