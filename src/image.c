@@ -5652,7 +5652,7 @@ canvas_apply_data (struct canvas *c, struct image_keyword *fmt)
     }
 }
 
-/* Get canvas object for IMAGE specification. Return NULL on error.  */
+/* Get canvas object for IMAGE specification.  Returns NULL on error.  */
 
 static struct canvas*
 canvas_get (Lisp_Object image, struct image_keyword *fmt)
