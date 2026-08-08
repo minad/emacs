@@ -32843,13 +32843,12 @@ redraw_image_glyphs_window (struct window *w, Lisp_Object spec)
 
   for (int area = LEFT_MARGIN_AREA; area < LAST_AREA; ++area)
     {
-      int start_x = window_box_left_offset (w, area);
       for (int y = 0; y < w->current_matrix->nrows; ++y)
 	{
 	  struct glyph_row *row = w->current_matrix->rows + y;
 	  if (row->enabled_p)
 	    {
-	      int pos_x = start_x + (area == TEXT_AREA ? row->x : 0);
+	      int pos_x = 0;
 	      for (int x = 0; x < row->used[area]; ++x)
 		{
 		  struct glyph *glyph = row->glyphs[area] + x;
@@ -32860,8 +32859,7 @@ redraw_image_glyphs_window (struct window *w, Lisp_Object spec)
 		      if (img && EQ (img->spec, spec))
 			{
 			  prepare_image_for_display (f, img);
-			  draw_glyphs (w, pos_x - start_x,
-				       row, area, x, x + 1,
+			  draw_glyphs (w, pos_x, row, area, x, x + 1,
 				       DRAW_NORMAL_TEXT, 0);
 			}
 		    }
