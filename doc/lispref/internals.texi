@@ -2064,7 +2064,7 @@ usually be @code{nil}.
 
 Thus, one can simply define a module function that takes as an argument
 a canvas image object, following the specification as laid down in
-@xref{Canvas Images}, and then use the above code to manipulate the pixel
+@ref{Canvas Images}, and then use the above code to manipulate the pixel
 buffer of the canvas and redraw it.
 
 @node Module Nonlocal
