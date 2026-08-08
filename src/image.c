@@ -114,7 +114,7 @@ struct canvas
 {
   /* Linked list of canvases, see `canvas_list'.  */
   struct canvas *next;
-  /* Pixel memory buffer in ARGB32 format across all platforms.  */
+  /* Memory buffer in ARGB32 format.  The same format on all platforms!  */
   uint32_t *data;
   /* Incremented if the canvas should be redrawn. Always larger than 0.  */
   uint32_t refresh;
