@@ -5752,7 +5752,7 @@ canvas_prepare_for_display (struct frame *f, struct image *img)
   block_input ();
 
 #ifdef USE_CAIRO
-  /* Cairo: Optimized canvas reloading. Reuse the existing Cairo surface.  */
+  /* Cairo: Optimized canvas reloading.  Reuse the existing Cairo surface.  */
   cairo_surface_t* surface;
   if (img->cr_data
       /* prepare_image_for_display ensures that cr_data is a surface pattern */
@@ -5762,7 +5762,7 @@ canvas_prepare_for_display (struct frame *f, struct image *img)
       cairo_surface_flush (surface);
       int stride = cairo_image_surface_get_stride (surface);
       unsigned char *dst = cairo_image_surface_get_data (surface);
-      /* Alpha channel is preserved here. Potentially preserve it when
+      /* Alpha channel is preserved here.  Potentially preserve it when
 	 drawing the image in x_draw_image_glyph_string?  */
       if (stride == 4 * width) /* Fast path */
 	{
@@ -5776,7 +5776,7 @@ canvas_prepare_for_display (struct frame *f, struct image *img)
       cairo_surface_mark_dirty (surface);
     }
 #elif defined HAVE_X_WINDOWS
-  /* X11: Optimized canvas reloading. Reuse the existing pixmap.  */
+  /* X11: Optimized canvas reloading.  Reuse the existing pixmap.  */
   int depth = FRAME_DISPLAY_INFO (f)->n_planes;
   XImage *ximg = XCreateImage (FRAME_X_DISPLAY (f), FRAME_X_VISUAL (f),
 			       depth, ZPixmap, 0, NULL, width, height,
@@ -5799,7 +5799,7 @@ canvas_prepare_for_display (struct frame *f, struct image *img)
       x_destroy_x_image (ximg);
     }
 #elif defined HAVE_ANDROID
-  /* Android: Optimized canvas reloading. Reuse the existing pixmap.  */
+  /* Android: Optimized canvas reloading.  Reuse the existing pixmap.  */
   struct android_image *ximg = android_create_image (FRAME_DISPLAY_INFO (f)->n_planes,
 						     ANDROID_Z_PIXMAP, NULL, width, height);
   if (ximg)
