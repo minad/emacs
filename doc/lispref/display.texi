@@ -7556,26 +7556,30 @@ The following code refreshes the canvas by reloading the data or file:
 (canvas-refresh my-vec-canvas 'reload-data)
 @end lisp
 
-@c TODO format and document these examples.
+When refreshing the canvas in a loop, we must explicitly call @code{redisplay}:
 
-@c Example:
+@example
+(setq canvas (create-image (make-vector (* 100 100) 0) 'canvas t
+			   :data-width 100 :data-height 100))
+(insert (propertize "#" 'display canvas))
+(dotimes (i (* 100 100))
+  (aset (plist-get (cdr canvas) :data) i #xFF)
+  (canvas-refresh canvas 'reload-data)
+  (redisplay))
+@end example
 
-@c   (let ((i 0))
-@c     (run-at-time nil 0.03 (lambda ()
-@c       (when (< i (* 100 100))
-@c         (aset (plist-get (cdr canvas) :data) i #xFF)
-@c         (incf i)
-@c         (canvas-refresh canvas 'reload-data)))))
+But, if we are refreshing the canvas via a timer or a command, @code{redisplay}
+is implicitly called after the timer or command. The following example updates
+the above canvas in a timer ~30 times per second:
 
-@c Example:
-
-@c   (setq canvas (create-image (make-vector (* 100 100) 0) 'canvas t
-@c                              :data-width 100 :data-height 100))
-@c   (insert (propertize "#" 'display canvas))
-@c   (dotimes (i (* 100 100))
-@c     (aset (plist-get (cdr canvas) :data) i #xFF)
-@c     (canvas-refresh canvas 'reload-data)
-@c     (redisplay))
+@example
+(let ((i 0))
+  (run-at-time nil 0.033 (lambda ()
+			  (when (< i (* 100 100))
+			    (aset (plist-get (cdr canvas) :data) i #xFF)
+			    (incf i)
+			    (canvas-refresh canvas 'reload-data)))))
+@end example
 
 Canvas images can be manipulated and refreshed via dynamic modules.
 @xref{Module Canvas API}, for further details.
