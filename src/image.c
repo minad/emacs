@@ -5500,7 +5500,7 @@ canvas_parse (Lisp_Object object, struct image_keyword *fmt)
 {
   memcpy (fmt, canvas_format, sizeof canvas_format);
 
-  /* Check that only one of :data or :file is present. */
+  /* Check that only one of :data or :file is present.  */
   if (!parse_image_spec (object, fmt, CANVAS_LAST, Qcanvas)
       || fmt[CANVAS_FILE].count + fmt[CANVAS_DATA].count > 1)
     return false;
