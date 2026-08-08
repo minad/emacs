@@ -32824,10 +32824,9 @@ append_stretch_glyph (struct it *it, Lisp_Object object,
     IT_EXPAND_MATRIX_WIDTH (it, area);
 }
 
-/* TODO: Also handle LEFT_MARGIN_AREA and RIGHT_MARGIN_AREA. Maybe
-   iterate over all areas? See glyph_row_area in dispextern.h. We need
-   to test this, add a margin-test.el to the emacs-canvas-patch
-   repository. */
+/* TODO: This needs testing!!! We to add a new test to the
+   emacs-canvas-patch repository (margin-test.el). Test canvas in margin
+   with calling canvas-refresh. */
 static void
 redraw_image_glyphs_window (struct window *w, Lisp_Object spec)
 {
@@ -32842,25 +32841,31 @@ redraw_image_glyphs_window (struct window *w, Lisp_Object spec)
       return;
     }
 
-  for (int y = 0; y < w->current_matrix->nrows; ++y)
+  for (int area = LEFT_MARGIN_AREA; area < LAST_AREA; ++area)
     {
-      struct glyph_row *row = w->current_matrix->rows + y;
-      if (row->enabled_p)
+      int start_x = window_box_left_offset (w, area);
+      for (int y = 0; y < w->current_matrix->nrows; ++y)
 	{
-	  int start = row->x;
-	  for (int x = 0; x < row->used[TEXT_AREA]; ++x)
+	  struct glyph_row *row = w->current_matrix->rows + y;
+	  if (row->enabled_p)
 	    {
-	      struct glyph *glyph = row->glyphs[TEXT_AREA] + x;
-	      if (glyph->type == IMAGE_GLYPH)
+	      int start = start_x + (area == TEXT_AREA ? row->x : 0);
+	      for (int x = 0; x < row->used[area]; ++x)
 		{
-		  struct image* img = IMAGE_OPT_FROM_ID (f, glyph->u.img_id);
-		  if (img && EQ (img->spec, spec))
+		  struct glyph *glyph = row->glyphs[area] + x;
+		  if (glyph->type == IMAGE_GLYPH)
 		    {
-		      prepare_image_for_display (f, img);
-		      draw_glyphs (w, start, row, TEXT_AREA, x, x + 1, DRAW_NORMAL_TEXT, 0);
+		      struct image* img =
+			IMAGE_OPT_FROM_ID (f, glyph->u.img_id);
+		      if (img && EQ (img->spec, spec))
+			{
+			  prepare_image_for_display (f, img);
+			  draw_glyphs (w, start, row, area, x, x + 1,
+				       DRAW_NORMAL_TEXT, 0);
+			}
 		    }
+		  start += glyph->pixel_width;
 		}
-	      start += glyph->pixel_width;
 	    }
 	}
     }
