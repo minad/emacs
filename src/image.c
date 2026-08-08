@@ -2301,7 +2301,7 @@ filter_image_spec (Lisp_Object spec)
 	  /* Some animation-related data doesn't affect display, but
 	     breaks the image cache.  Furthermore for canvases do not
 	     check the data for equality, such that data can be changed
-	     via mutation to refresh the canvas. Filter these keys out.
+	     via mutation to refresh the canvas.  Filter these keys out.
 	  */
 	  if (!(is_canvas ? EQ (key, QCdata) :
 		(EQ (key, QCanimate_buffer)
