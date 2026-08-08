@@ -5859,8 +5859,8 @@ canvas_data (Lisp_Object image)
 DEFUN ("canvas-refresh", Fcanvas_refresh, Scanvas_refresh, 1, 2, 0,
        doc: /* Refresh canvas IMAGE and update it on screen.
 
-If RELOAD-DATA is non-nil, reload the :data from the image
-specification.
+If RELOAD-DATA is non-nil, reload the :data or :file from the image
+specification before redrawing the canvas.
 
 When `canvas-refresh' is called from a timer or a command, `redisplay'
 will be called implicitly after the timer or command.  `redisplay' must
