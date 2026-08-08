@@ -5485,11 +5485,17 @@ static const struct image_keyword canvas_format[CANVAS_LAST] =
   {":relief",		IMAGE_INTEGER_VALUE,			0},
 };
 
-/* Weak hash map associating the image spec with the canvas object.  */
+/* Weak hash map associating canvas image specs with the canvas objects.
+
+   As long as a canvas image spec object is alive, the canvas object
+   backing it, will stay alive.  As soon as the GC runs and frees
+   unreferenced canvas image specs, the specs are are also removed from
+   the weak canvas_map.  Then canvas_free_unused will check the
+   canvas_map and free the backing canvas objects.   */
 
 static Lisp_Object canvas_map;
 
-/* Linked list of all canvases.  */
+/* Linked list of all canvas objects.  */
 
 static struct canvas* canvas_list = 0;
 
