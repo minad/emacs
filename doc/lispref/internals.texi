@@ -2040,9 +2040,9 @@ The pixel format is ARGB32 on all platforms.  Return @code{NULL} in case
 of error.
 @end deftypefn
 
-Note that the pixel buffer is only valid as the canvas object is alive
-and its dimensions have not been changed. If it has changed, Emacs will
-create a new pixel buffer and automatically resize the canvas.
+Note that the pixel buffer is only valid as long as the canvas object is
+alive and its dimensions have not been changed. If it has changed, Emacs
+will create a new pixel buffer and automatically resize the canvas.
 
 Once we update the canvas pixel buffer via dynamic modules, we also have
 to call @code{canvas-refresh} for Emacs to redisplay the canvas.  This
