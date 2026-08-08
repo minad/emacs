@@ -595,7 +595,7 @@ See Bug#36226."
                                 (logand (ash pixel -8) #xff)
                                 (logand (ash pixel -16) #xff)
                                 (logand (ash pixel -24) #xff)))
-         (coding-system-for-write 'binary))
+         (coding-system-for-write 'no-conversion))
     (with-temp-file "data/image/canvas-argb"
       (set-buffer-multibyte nil)
       (dotimes (_ (* width height))
