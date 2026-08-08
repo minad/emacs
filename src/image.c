@@ -5818,8 +5818,8 @@ canvas_prepare_for_display (struct frame *f, struct image *img)
       image_destroy_x_image (ximg);
     }
 #elif defined HAVE_NS
-  /* NS: Recreates and fills the pixmap.  This is necessary in order to
-     force the redraw in the NS display system.  */
+  /* NS: Recreates and fills the pixmap.  This is a workaround, ideally
+     we'd like to recache the NSImage instead.  */
   img->pixmap = ns_image_reset(img->pixmap, width, height);
   for (int y = 0; y < height; ++y)
     for (int x = 0; x < width; ++x)
