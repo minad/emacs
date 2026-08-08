@@ -5865,29 +5865,8 @@ specification before redrawing the canvas.
 When `canvas-refresh' is called from a timer or a command, `redisplay'
 will be called implicitly after the timer or command.  `redisplay' must
 be called explicitly after `canvas-refresh' only when the redraw should
-happen from a loop.  See Info node `(elisp) Canvas Images' for examples.
-
-TODO Move examples to Lisp manual if not already there, or update
-examples in the manual.
-
-Example:
-
-  (setq canvas (create-image (make-vector (* 100 100) 0) 'canvas t
-                             :data-width 100 :data-height 100))
-  (insert (propertize "#" 'display canvas))
-  (dotimes (i (* 100 100))
-    (aset (plist-get (cdr canvas) :data) i #xFF)
-    (canvas-refresh canvas 'reload-data)
-    (redisplay))
-
-Example:
-
-  (let ((i 0))
-    (run-at-time nil 0.03 (lambda ()
-      (when (< i (* 100 100))
-        (aset (plist-get (cdr canvas) :data) i #xFF)
-        (incf i)
-        (canvas-refresh canvas 'reload-data)))))  */)
+happen from a loop.  See Info node `(elisp) Canvas Images' for
+examples.  */)
   (Lisp_Object image, Lisp_Object reload_data)
 {
   struct image_keyword fmt[CANVAS_LAST];

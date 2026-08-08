@@ -7542,11 +7542,9 @@ Once a canvas image object has been created and displayed, it can be
 ``refreshed'' via @code{canvas-refresh}.
 
 @defun canvas-refresh image &optional reload-data
-Refresh canvas @var{image} and update it on screen.
-
-If the optional argument @var{reload-data} is non-nil, reload the
-@code{:data} or @code{file} from the image specification before
-redrawing the canvas.
+Refresh canvas @var{image} and update it on screen. If the optional
+argument @var{reload-data} is non-nil, reload the @code{:data} or
+@code{file} from the image specification before redrawing the canvas.
 @end defun
 
 The following code refreshes the canvas by reloading the data or file:
@@ -7557,6 +7555,27 @@ The following code refreshes the canvas by reloading the data or file:
 ;; Reload and refresh canvas images
 (canvas-refresh my-vec-canvas 'reload-data)
 @end lisp
+
+@c TODO format and document these examples.
+
+@c Example:
+
+@c   (let ((i 0))
+@c     (run-at-time nil 0.03 (lambda ()
+@c       (when (< i (* 100 100))
+@c         (aset (plist-get (cdr canvas) :data) i #xFF)
+@c         (incf i)
+@c         (canvas-refresh canvas 'reload-data)))))
+
+@c Example:
+
+@c   (setq canvas (create-image (make-vector (* 100 100) 0) 'canvas t
+@c                              :data-width 100 :data-height 100))
+@c   (insert (propertize "#" 'display canvas))
+@c   (dotimes (i (* 100 100))
+@c     (aset (plist-get (cdr canvas) :data) i #xFF)
+@c     (canvas-refresh canvas 'reload-data)
+@c     (redisplay))
 
 Canvas images can be manipulated and refreshed via dynamic modules.
 @xref{Module Canvas API}, for further details.
