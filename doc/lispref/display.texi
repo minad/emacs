@@ -7537,6 +7537,8 @@ string or overlay:
 (overlay-put some-overlay 'display my-canvas)
 @end lisp
 
+TODO: Add here @defun canvas-refresh documentation. This seems to be missing?
+
 Once a canvas image object has been created and displayed, it can be
 ``refreshed'' via @code{canvas-refresh}. If an optional non-@code{nil}
 argument is passed to @code{canvas-refresh} then Emacs will reload the
