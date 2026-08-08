@@ -781,7 +781,7 @@ Fmod_test_canvas_read (emacs_env *env, ptrdiff_t nargs,
   int width  = (int) env->extract_integer (env, args[1]);
   int height = (int) env->extract_integer (env, args[2]);
 
-  /* Validate dimensions against the canvas image spec. */
+  /* Validate dimensions against the canvas image spec.  */
   emacs_value Qimage_property = env->intern (env, "image-property");
   emacs_value Qdata_width     = env->intern (env, ":data-width");
   emacs_value Qdata_height    = env->intern (env, ":data-height");
@@ -819,7 +819,7 @@ Fmod_test_canvas_write (emacs_env *env, ptrdiff_t nargs,
   int width  = (int) env->extract_integer (env, args[1]);
   int height = (int) env->extract_integer (env, args[2]);
 
-  /* Validate dimensions against the canvas image spec. */
+  /* Validate dimensions against the canvas image spec.  */
   emacs_value Qimage_property = env->intern (env, "image-property");
   emacs_value Qdata_width     = env->intern (env, ":data-width");
   emacs_value Qdata_height    = env->intern (env, ":data-height");

@@ -32892,7 +32892,7 @@ redraw_image_glyphs (Lisp_Object spec)
   FOR_EACH_FRAME (tail, frame)
     {
       /* When the frame is garbaged, wait for full redisplay.  Only use
-         the fast path when the frame is in a consistent state. */
+         the fast path when the frame is in a consistent state.  */
       struct frame* f = XFRAME (frame);
       if (!FRAME_GARBAGED_P (f))
         redraw_image_glyphs_window_tree (XWINDOW (f->root_window), spec);

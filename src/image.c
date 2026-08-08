@@ -1896,7 +1896,7 @@ prepare_image_for_display (struct frame *f, struct image *img)
 #endif
 
   /* Update image pixmap from canvas pixel buffer if refresh counter has
-     been updated.  For canvases the refresh counter is always >= 1. */
+     been updated.  For canvases the refresh counter is always >= 1.  */
   if (img->refresh
       && EQ (image_spec_value (img->spec, QCtype, NULL), Qcanvas)
       && img->refresh != ((struct canvas *) XFIXNUMPTR (img->lisp_data))->refresh)
@@ -5690,7 +5690,7 @@ canvas_get (Lisp_Object image, struct image_keyword *fmt)
     }
   else if (c->width != width || c->height != height)
     {
-      /* Resize canvas. */
+      /* Resize canvas.  */
       c->width = width;
       c->height = height;
       c->data = xrealloc (c->data, 4 * width * height);
@@ -5818,7 +5818,8 @@ canvas_prepare_for_display (struct frame *f, struct image *img)
     for (int x = 0; x < width; ++x)
       PUT_PIXEL (img->pixmap, x, y, src[y * width + x]);
 #else
-  /* Platform independent canvas reloading.  Less efficient, since it recreates images and pixmaps. */
+  /* Platform independent canvas reloading.  Less efficient, since it
+     recreates images and pixmaps.  */
   FRAME_TERMINAL (f)->free_pixmap (f, img->pixmap);
   img->pixmap = NO_PIXMAP;
   Emacs_Pix_Container ximg;
