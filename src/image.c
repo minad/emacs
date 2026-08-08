@@ -5865,9 +5865,10 @@ specification before redrawing the canvas.
 When `canvas-refresh' is called from a timer or a command, `redisplay'
 will be called implicitly after the timer or command.  `redisplay' must
 be called explicitly after `canvas-refresh' only when the redraw should
-happen from a loop.  See the manual for examples.
+happen from a loop.  See Info node `(elisp) Canvas Images' for examples.
 
-TODO Move examples to Lisp manual.
+TODO Move examples to Lisp manual if not already there, or update
+examples in the manual.
 
 Example:
 
