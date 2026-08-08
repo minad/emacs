@@ -32824,6 +32824,10 @@ append_stretch_glyph (struct it *it, Lisp_Object object,
     IT_EXPAND_MATRIX_WIDTH (it, area);
 }
 
+/* TODO: Also handle LEFT_MARGIN_AREA and RIGHT_MARGIN_AREA. Maybe
+   iterate over all areas? See glyph_row_area in dispextern.h. We need
+   to test this, add a margin-test.el to the emacs-canvas-patch
+   repository. */
 static void
 redraw_image_glyphs_window (struct window *w, Lisp_Object spec)
 {
