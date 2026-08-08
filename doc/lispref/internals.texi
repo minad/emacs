@@ -2060,7 +2060,7 @@ env->funcall(env, env->intern(env, "canvas-refresh"), 1, &canvas);
 Note that @code{canvas-refresh} has an optional boolean argument to
 reload the @code{:data} vector or string from the canvas image
 specification.  When called from dynamic modules, the argument should
-usually be @code{nil}, thus not provided.
+usually be @code{nil}.
 
 Thus, one can simply define a module function that takes as an argument
 a canvas image object, following the specification as laid down in
