@@ -837,7 +837,7 @@ Fmod_test_canvas_write (emacs_env *env, ptrdiff_t nargs,
     }
 
   for (int i = 0; i < width * height; i++)
-    buf[i] = ~buf[i]; // invert the pixels
+    buf[i] = ~buf[i]; /* invert the pixels */
 
   emacs_value canvas_args[2] = {args[0], env->intern (env, "nil")};
   env->funcall (env, env->intern (env, "canvas-refresh"), 2, canvas_args);
