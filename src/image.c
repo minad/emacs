@@ -5491,7 +5491,7 @@ static const struct image_keyword canvas_format[CANVAS_LAST] =
    backing it, will stay alive.  As soon as the GC runs and frees
    unreferenced canvas image specs, the specs are are also removed from
    the weak canvas_map.  Then canvas_free_unused will check the
-   canvas_map and free the backing canvas objects.   */
+   canvas_map and free the backing canvas objects.  */
 
 static Lisp_Object canvas_map;
 
