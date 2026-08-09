@@ -2054,7 +2054,8 @@ uint32_t *pixel = env->canvas_data (env, canvas);
 /* Write to the pixel buffer */
 ...
 /* Redraw the canvas */
-env->funcall(env, env->intern(env, "canvas-refresh"), 2, (emacs_value[]){canvas, Qnil});
+env->funcall(env, env->intern(env, "canvas-refresh"), 2,
+             (emacs_value[])@{canvas, Qnil@});
 @end example
 
 Note that @code{canvas-refresh} has an optional boolean argument to
