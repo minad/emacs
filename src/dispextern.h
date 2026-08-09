@@ -3286,7 +3286,7 @@ struct image
   bool_bf background_transparent : 1;
 
   /* True if the `background' and `background_transparent' fields are
-     valid, respectively. */
+     valid, respectively.  */
   bool_bf background_valid : 1, background_transparent_valid : 1;
 
   /* Refresh counter reflecting the current version of the image.
